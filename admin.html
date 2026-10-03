@@ -60,7 +60,6 @@
       <div class="hbtns">
         <a href="manage.html">🏷️ สินค้า</a>
         <a href="stock.html">📦 สต็อก</a>
-        <a href="purchase.html">🧾 ขอซื้อ</a>
         <a href="claims.html">🛠️ เคลม</a>
         <button id="logoutBtn">ออกจากระบบ</button>
       </div>
@@ -137,7 +136,7 @@
       $('stats').innerHTML = `
         <div class="stat"><b style="color:#b45309">${count('pending')}</b><small>รอยืนยัน</small></div>
         <div class="stat"><b style="color:#c2410c">${orders.filter(needTech).length}</b><small>รอมอบหมายช่าง</small></div>
-        <a class="stat" href="purchase.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
+        <a class="stat" href="stock.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
         <div class="stat"><b>฿${sales.toLocaleString()}</b><small>ยอดขายรวม</small></div>`;
 
       const keys = ['all', ...Object.keys(STATUS)];
