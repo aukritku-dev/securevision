@@ -1,4 +1,4 @@
-<!DOCTYPE html>  //5
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -12,7 +12,7 @@
     header { background: #0f2350; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
     header b { font-size: 20px; display: block; }
     header small { opacity: .75; }
-    .hbtns { display: flex; gap: 8px; }
+    .hbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .hbtns a, .hbtns button { background: rgba(255,255,255,.15); color: white; border: none; border-radius: 10px; padding: 8px 12px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
     main { padding: 16px; }
 
@@ -60,6 +60,8 @@
       <div class="hbtns">
         <a href="manage.html">🏷️ สินค้า</a>
         <a href="stock.html">📦 สต็อก</a>
+        <a href="purchase.html">🧾 ขอซื้อ</a>
+        <a href="claims.html">🛠️ เคลม</a>
         <button id="logoutBtn">ออกจากระบบ</button>
       </div>
     </header>
@@ -69,7 +71,7 @@
       <div class="chips" id="chips"></div>
       <div id="list"><p class="empty">กำลังโหลด...</p></div>
 
-      <div class="tools">
+      <div class="tools" hidden>
         🛠 เครื่องมือ
         <p><button id="seedBtn">📥 นำเข้าสินค้าตัวอย่าง</button> <span id="seedStatus"></span></p>
       </div>
@@ -135,7 +137,7 @@
       $('stats').innerHTML = `
         <div class="stat"><b style="color:#b45309">${count('pending')}</b><small>รอยืนยัน</small></div>
         <div class="stat"><b style="color:#c2410c">${orders.filter(needTech).length}</b><small>รอมอบหมายช่าง</small></div>
-        <a class="stat" href="stock.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
+        <a class="stat" href="purchase.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
         <div class="stat"><b>฿${sales.toLocaleString()}</b><small>ยอดขายรวม</small></div>`;
 
       const keys = ['all', ...Object.keys(STATUS)];

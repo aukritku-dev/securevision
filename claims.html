@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการเคลม | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Kanit', sans-serif; background: #f1f5f9; color: #0f172a; visibility: hidden; }
+    header { position: sticky; top: 0; z-index: 10; background: #1e293b; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 20px; font-weight: 500; flex: 1; }
+    header a, header button { color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+    main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+    .stat b { display: block; font-size: 26px; font-weight: 600; }
+    .stat span { font-size: 13px; color: #64748b; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .chip { border: 1px solid #cbd5e1; background: #fff; border-radius: 99px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+    .chip.on { background: #1e293b; color: #fff; border-color: #1e293b; }
+    .claim { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e1; border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .head b { font-size: 16px; }
+    .badge { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 14px; margin-top: 10px; }
+    .grid span { color: #64748b; }
+    .detail { margin-top: 10px; background: #f8fafc; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+    .claim img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; margin-top: 10px; cursor: zoom-in; border: 1px solid #e2e8f0; }
+    .wty { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 8px; }
+    .result { margin-top: 10px; background: #eff6ff; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { border: 0; border-radius: 12px; padding: 10px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+    .btn.primary { background: #2563eb; color: #fff; }
+    .btn.green { background: #16a34a; color: #fff; }
+    .btn.cyan { background: #0e7490; color: #fff; }
+    .btn.ghost { background: #fff; border: 1px solid #cbd5e1; }
+    .btn.danger { background: #fff; border: 1px solid #fecaca; color: #dc2626; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .empty { text-align: center; color: #94a3b8; padding: 30px; background: #fff; border-radius: 16px; }
+    .modal { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .modal.show { display: flex; }
+    .box { background: #fff; border-radius: 18px; padding: 20px; width: 100%; max-width: 460px; }
+    .box h3 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+    .box label { display: block; font-size: 13px; color: #475569; margin: 12px 0 4px; }
+    .box input, .box select, .box textarea { font: inherit; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; width: 100%; }
+    .box textarea { min-height: 80px; }
+    #zoom { cursor: zoom-out; }
+    #zoom img { max-width: 92vw; max-height: 88vh; border-radius: 12px; }
+    @media (max-width: 680px) { .stats { grid-template-columns: repeat(2, 1fr); } .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="admin.html">← กลับ</a>
+    <h1>🛠️ จัดการเคลม</h1>
+    <button id="logoutBtn">ออก</button>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><b id="sOpen">0</b><span>รอตรวจสอบ</span></div>
+      <div class="stat"><b id="sWork">0</b><span>กำลังดำเนินการ</span></div>
+      <div class="stat"><b id="sDone">0</b><span>เสร็จสิ้น</span></div>
+      <div class="stat"><b id="sRate">-</b><span>อัตราอนุมัติเคลม</span></div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div id="list"></div>
+  </main>
+
+  <!-- Modal ดำเนินการ -->
+  <div class="modal" id="actModal">
+    <div class="box">
+      <h3 id="mTitle"></h3>
+      <p id="mInfo" style="font-size:13px;color:#64748b"></p>
+      <div id="mBody"></div>
+      <label>ข้อความถึงลูกค้า</label>
+      <textarea id="mReply" placeholder="ลูกค้าจะเห็นข้อความนี้ในหน้าช่วยเหลือ"></textarea>
+      <div class="actions" style="justify-content:flex-end">
+        <button class="btn ghost" id="mCancel">ยกเลิก</button>
+        <button class="btn primary" id="mOk">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="zoom"><img id="zoomImg"></div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole, logout } from './guard.js';
+    import { esc } from './status.js';
+    import {
+      collection, doc, getDocs, onSnapshot, updateDoc, writeBatch, increment, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+    const $ = id => document.getElementById(id);
+
+    const CLAIM = {
+      open:      { label: 'รอตรวจสอบ',       color: '#b45309', bg: '#fef3c7' },
+      reviewing: { label: 'กำลังตรวจสอบ',     color: '#7c3aed', bg: '#ede9fe' },
+      repair:    { label: 'นัดช่างซ่อม',      color: '#1d4ed8', bg: '#dbeafe' },
+      replace:   { label: 'เปลี่ยนสินค้าใหม่', color: '#0e7490', bg: '#cffafe' },
+      done:      { label: 'เสร็จสิ้น',         color: '#15803d', bg: '#dcfce7' },
+      rejected:  { label: 'ไม่อนุมัติ',         color: '#b91c1c', bg: '#fee2e2' }
+    };
+
+    let me = null, claims = [], products = {}, staff = [], filter = 'active', acting = null;
+
+    const fmt = ts => ts?.toDate ? ts.toDate().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+    const isImg = s => typeof s === 'string' && s.startsWith('data:image/');
+    const todayStr = () => new Date().toLocaleDateString('sv-SE');
+
+    requireRole('admin', async user => {
+      me = user;
+      document.body.style.visibility = 'visible';
+
+      const ss = await getDocs(collection(db, 'staff'));
+      staff = ss.docs.map(d => ({ uid: d.id, ...d.data() })).filter(t => t.role === 'tech');
+
+      onSnapshot(collection(db, 'products'), snap => {
+        products = {};
+        snap.forEach(d => products[d.id] = { id: d.id, ...d.data() });
+      });
+
+      onSnapshot(collection(db, 'claims'), snap => {
+        claims = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds ?? 9e12) - (a.createdAt?.seconds ?? 9e12));
+        render();
+      });
+    });
+
+    function render() {
+      const n = st => claims.filter(c => st.includes(c.status)).length;
+      $('sOpen').textContent = n(['open']);
+      $('sWork').textContent = n(['reviewing', 'repair', 'replace']);
+      $('sDone').textContent = n(['done']);
+      const decided = claims.filter(c => c.decision);
+      $('sRate').textContent = decided.length
+        ? Math.round(decided.filter(c => c.decision !== 'rejected').length / decided.length * 100) + '%'
+        : '-';
+
+      const opts = [['active', 'ยังไม่ปิด', ['open', 'reviewing', 'repair', 'replace']], ['all', 'ทั้งหมด', null],
+        ...Object.entries(CLAIM).map(([k, v]) => [k, v.label, [k]])];
+      $('chips').innerHTML = opts.map(([k, label, st]) =>
+        `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${label} (${st ? n(st) : claims.length})</button>`).join('');
+
+      const active = ['open', 'reviewing', 'repair', 'replace'];
+      const list = filter === 'all' ? claims
+        : filter === 'active' ? claims.filter(c => active.includes(c.status))
+        : claims.filter(c => c.status === filter);
+
+      if (!list.length) { $('list').innerHTML = '<div class="empty">ไม่มีรายการเคลม</div>'; return; }
+
+      $('list').innerHTML = list.map(c => {
+        const s = CLAIM[c.status] || CLAIM.open;
+        let result = '';
+        if (c.status === 'repair' || (c.decision === 'repair')) result += `🔧 ช่าง <b>${esc(c.techName || '-')}</b> · นัดวันที่ <b>${esc(c.appointDate || '-')}</b><br>`;
+        if (c.decision === 'replace') result += '🔁 เปลี่ยนสินค้าใหม่ (ตัดสต็อก 1 ชิ้น)<br>';
+        if (c.reply) result += '💬 ' + esc(c.reply) + '<br>';
+        if (c.decidedBy) result += `<small style="color:#64748b">ตัดสินโดย ${esc(c.decidedBy)} · ${fmt(c.decidedAt)}</small>`;
+
+        let actions = '';
+        if (c.status === 'open') actions = `<button class="btn primary" data-act="review" data-id="${esc(c.id)}">🔍 รับเรื่อง / เริ่มตรวจสอบ</button>`;
+        if (c.status === 'reviewing') actions = `
+          <button class="btn primary" data-act="repair" data-id="${esc(c.id)}">🔧 ส่งช่างซ่อม</button>
+          <button class="btn cyan" data-act="replace" data-id="${esc(c.id)}">🔁 เปลี่ยนสินค้าใหม่</button>
+          <button class="btn danger" data-act="reject" data-id="${esc(c.id)}">❌ ไม่อนุมัติ</button>`;
+        if (c.status === 'repair' || c.status === 'replace') actions = `<button class="btn green" data-act="done" data-id="${esc(c.id)}">✅ ปิดเรื่องเคลม</button>`;
+
+        return `
+          <div class="claim" style="border-left-color:${s.color}">
+            <div class="head">
+              <b>${esc(c.id)}</b>
+              <span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span>
+            </div>
+            <div class="grid">
+              <div><span>ลูกค้า:</span> ${esc(c.customerName)}</div>
+              <div><span>โทร:</span> <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>
+              <div><span>สินค้า:</span> ${esc(c.productName)} <small>(${esc(c.productId)})</small></div>
+              <div><span>ออเดอร์:</span> ${esc(c.orderId)}</div>
+              <div><span>แจ้งเมื่อ:</span> ${fmt(c.createdAt)}</div>
+              <div><span>ที่อยู่:</span> ${esc(c.address || '-')}</div>
+            </div>
+            <div class="detail"><b>${esc(c.type)}</b> — ${esc(c.detail)}</div>
+            ${isImg(c.image) ? `<img src="${c.image}" data-zoom alt="รูปประกอบ">` : ''}
+            ${result ? `<div class="result">${result}</div>` : ''}
+            ${actions ? `<div class="actions">${actions}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    $('chips').addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      filter = b.dataset.f; render();
+    });
+
+    // ซูมรูป
+    $('list').addEventListener('click', e => {
+      if (e.target.matches('[data-zoom]')) { $('zoomImg').src = e.target.src; $('zoom').classList.add('show'); }
+    });
+    $('zoom').addEventListener('click', () => $('zoom').classList.remove('show'));
+
+    // ---------- ปุ่มดำเนินการ ----------
+    $('list').addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      const c = claims.find(x => x.id === b.dataset.id); if (!c) return;
+      const act = b.dataset.act;
+
+      if (act === 'review') {
+        await save(c.id, { status: 'reviewing', reviewBy: me.email, reviewAt: serverTimestamp() });
+        return;
+      }
+      openModal(c, act);
+    });
+
+    function openModal(c, act) {
+      acting = { c, act };
+      $('mReply').value = '';
+      $('mInfo').textContent = c.id + ' · ' + c.productName + ' · ' + c.customerName;
+      const p = products[c.productId];
+
+      if (act === 'repair') {
+        $('mTitle').textContent = '🔧 ส่งช่างซ่อม';
+        $('mBody').innerHTML = `
+          <label>เลือกช่าง</label>
+          <select id="mTech">${staff.map(t => `<option value="${esc(t.uid)}">${esc(t.name || t.code || t.uid)}${t.zone ? ' · ' + esc(t.zone) : ''}</option>`).join('')}</select>
+          <label>วันนัด</label>
+          <input type="date" id="mDate" min="${todayStr()}" value="${todayStr()}">`;
+      }
+      if (act === 'replace') {
+        $('mTitle').textContent = '🔁 เปลี่ยนสินค้าใหม่';
+        const st = p?.stock || 0;
+        $('mBody').innerHTML = `<p style="margin-top:10px;font-size:14px;padding:10px;border-radius:10px;background:${st > 0 ? '#ecfdf5' : '#fee2e2'}">
+          สต็อก ${esc(c.productName)} คงเหลือ <b>${st}</b> ชิ้น ${st > 0 ? '→ ระบบจะตัดสต็อก 1 ชิ้น และบันทึกลง stockMoves' : '→ ❌ สินค้าหมด เปลี่ยนไม่ได้ ต้องสั่งซื้อก่อน'}</p>`;
+      }
+      if (act === 'reject') {
+        $('mTitle').textContent = '❌ ไม่อนุมัติเคลม';
+        $('mBody').innerHTML = '<p style="margin-top:10px;font-size:14px;color:#b91c1c">ต้องระบุเหตุผลในช่องข้อความถึงลูกค้า</p>';
+        $('mReply').placeholder = 'เช่น ความเสียหายเกิดจากน้ำท่วม ไม่อยู่ในเงื่อนไขรับประกัน';
+      }
+      if (act === 'done') {
+        $('mTitle').textContent = '✅ ปิดเรื่องเคลม';
+        $('mBody').innerHTML = '<p style="margin-top:10px;font-size:14px">ยืนยันว่าซ่อม/เปลี่ยนสินค้าให้ลูกค้าเรียบร้อยแล้ว</p>';
+        $('mReply').value = c.reply || '';
+      }
+      $('actModal').classList.add('show');
+    }
+
+    $('mCancel').addEventListener('click', () => { $('actModal').classList.remove('show'); acting = null; });
+
+    $('mOk').addEventListener('click', async () => {
+      if (!acting) return;
+      const { c, act } = acting;
+      const reply = $('mReply').value.trim();
+      const decided = { decidedBy: me.email, decidedAt: serverTimestamp() };
+
+      if (act === 'repair') {
+        const t = staff.find(s => s.uid === $('mTech').value);
+        if (!t) return alert('ยังไม่มีข้อมูลช่างในระบบ');
+        const date = $('mDate').value;
+        if (!date) return alert('กรุณาเลือกวันนัด');
+        if (+date.slice(0, 4) > 2400) return alert('กรุณาใช้ปี ค.ศ.');
+        await save(c.id, { status: 'repair', decision: 'repair', techUid: t.uid, techName: t.name || t.code || '', appointDate: date, reply, ...decided });
+      }
+
+      if (act === 'replace') {
+        const p = products[c.productId];
+        const before = p?.stock || 0;
+        if (before <= 0) return alert('สินค้าหมด ไม่สามารถเปลี่ยนได้');
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'products', c.productId), { stock: increment(-1) });
+        batch.set(doc(collection(db, 'stockMoves')), {
+          pid: c.productId, name: c.productName, type: 'claim',
+          qty: -1, before, after: before - 1, ref: c.id,
+          note: 'เปลี่ยนสินค้าตามเคลม ' + c.id, by: me.email, at: serverTimestamp()
+        });
+        batch.update(doc(db, 'claims', c.id), { status: 'replace', decision: 'replace', reply, ...decided });
+        try { await batch.commit(); } catch (err) { return alert('ไม่สำเร็จ: ' + err.message); }
+      }
+
+      if (act === 'reject') {
+        if (!reply) { $('mReply').focus(); return alert('กรุณาระบุเหตุผล'); }
+        await save(c.id, { status: 'rejected', decision: 'rejected', reply, ...decided });
+      }
+
+      if (act === 'done') {
+        await save(c.id, { status: 'done', reply, doneBy: me.email, doneAt: serverTimestamp() });
+      }
+
+      $('actModal').classList.remove('show');
+      acting = null;
+    });
+
+    async function save(id, data) {
+      try { await updateDoc(doc(db, 'claims', id), data); }
+      catch (err) { alert('บันทึกไม่สำเร็จ: ' + err.message); }
+    }
+
+    $('logoutBtn').addEventListener('click', logout);
+  </script>
+</body>
+</html>

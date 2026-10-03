@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ใบขอซื้อ | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Kanit', sans-serif; background: #f1f5f9; color: #0f172a; visibility: hidden; }
+    header { position: sticky; top: 0; z-index: 10; background: #1e293b; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 20px; font-weight: 500; flex: 1; }
+    header a, header button { color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+    main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+    .stat b { display: block; font-size: 26px; font-weight: 600; }
+    .stat span { font-size: 13px; color: #64748b; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+    .card h2 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .hint { font-size: 13px; color: #64748b; margin-bottom: 14px; }
+    .row { display: grid; grid-template-columns: 24px 44px 1fr 90px 100px 100px; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+    .row.head { font-size: 12px; color: #64748b; border-top: 0; padding-top: 0; }
+    .row.off { opacity: .45; }
+    .pic { width: 44px; height: 44px; border-radius: 10px; background: #f1f5f9; display: grid; place-items: center; font-size: 22px; overflow: hidden; }
+    .pic img { width: 100%; height: 100%; object-fit: cover; }
+    .name { font-size: 14px; line-height: 1.3; }
+    .name small { display: block; color: #64748b; font-size: 12px; }
+    .tag { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 99px; margin-left: 4px; }
+    input, select, textarea { font: inherit; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 10px; width: 100%; background: #fff; }
+    .sub { text-align: right; font-size: 14px; font-weight: 500; }
+    .form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .form label { font-size: 13px; color: #475569; display: block; margin-bottom: 4px; }
+    .add { display: flex; gap: 8px; margin-top: 12px; }
+    .add select { flex: 1; }
+    .btn { border: 0; border-radius: 12px; padding: 10px 16px; font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+    .btn.primary { background: #2563eb; color: #fff; }
+    .btn.green { background: #16a34a; color: #fff; }
+    .btn.ghost { background: #fff; border: 1px solid #cbd5e1; color: #0f172a; }
+    .btn.danger { background: #fff; border: 1px solid #fecaca; color: #dc2626; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .total { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 2px dashed #e2e8f0; gap: 12px; flex-wrap: wrap; }
+    .total b { font-size: 22px; color: #1d4ed8; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .chip { border: 1px solid #cbd5e1; background: #fff; border-radius: 99px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+    .chip.on { background: #1e293b; color: #fff; border-color: #1e293b; }
+    .pr { border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; margin-bottom: 12px; border-left: 5px solid #cbd5e1; }
+    .pr-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pr-head b { font-size: 16px; }
+    .badge { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+    .meta { font-size: 13px; color: #64748b; margin: 6px 0 10px; }
+    .lines { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .lines td { padding: 6px 4px; border-top: 1px solid #f1f5f9; }
+    .lines td.r { text-align: right; white-space: nowrap; }
+    .warn { color: #dc2626; font-size: 12px; }
+    .timeline { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; }
+    .step { background: #f1f5f9; border-radius: 8px; padding: 6px 10px; color: #94a3b8; }
+    .step.done { background: #ecfdf5; color: #15803d; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .empty { text-align: center; color: #94a3b8; padding: 24px; font-size: 14px; }
+    .modal { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .modal.show { display: flex; }
+    .box { background: #fff; border-radius: 18px; padding: 20px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; }
+    .box h3 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    .rcv { display: grid; grid-template-columns: 1fr 80px 90px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #f1f5f9; font-size: 14px; }
+    @media (max-width: 680px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .row { grid-template-columns: 24px 40px 1fr 70px; }
+      .row .c-cost, .row .sub, .row.head .h-cost, .row.head .h-sub { display: none; }
+      .form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="admin.html">← กลับ</a>
+    <h1>🧾 ใบขอซื้อ (PR)</h1>
+    <a href="stock.html">📦 สต็อก</a>
+    <button id="logoutBtn">ออก</button>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><b id="sLow">0</b><span>สินค้าถึงจุดสั่งซื้อ</span></div>
+      <div class="stat"><b id="sPending">0</b><span>รออนุมัติ</span></div>
+      <div class="stat"><b id="sApproved">0</b><span>รอรับของ</span></div>
+      <div class="stat"><b id="sMonth">฿0</b><span>ยอดสั่งซื้อเดือนนี้</span></div>
+    </div>
+
+    <!-- สร้างใบขอซื้อ -->
+    <section class="card">
+      <h2>➕ สร้างใบขอซื้อใหม่</h2>
+      <p class="hint">ระบบเลือกสินค้าที่สต็อก ≤ ROP ให้อัตโนมัติ และตั้งจำนวนตาม EOQ แก้จำนวนหรือราคาทุนได้ก่อนส่ง</p>
+
+      <div class="row head">
+        <span></span><span></span><span>สินค้า</span><span>จำนวน</span>
+        <span class="h-cost">ราคาทุน/ชิ้น</span><span class="h-sub" style="text-align:right">รวม</span>
+      </div>
+      <div id="draftList"></div>
+
+      <div class="add">
+        <select id="picker"></select>
+        <button class="btn ghost" id="addBtn">+ เพิ่ม</button>
+      </div>
+
+      <div class="form">
+        <div>
+          <label>ผู้ขาย (Supplier) *</label>
+          <input id="supplier" placeholder="เช่น บจก. ไทยซีซีทีวี ซัพพลาย">
+        </div>
+        <div>
+          <label>หมายเหตุ</label>
+          <input id="note" placeholder="เช่น ต้องการภายใน 14 วัน">
+        </div>
+      </div>
+
+      <div class="total">
+        <div>ยอดรวมใบขอซื้อ <b id="draftTotal">฿0</b></div>
+        <button class="btn primary" id="createBtn">📨 ส่งใบขอซื้อ</button>
+      </div>
+    </section>
+
+    <!-- รายการใบขอซื้อ -->
+    <section class="card">
+      <h2>📋 รายการใบขอซื้อ</h2>
+      <p class="hint">ขั้นตอน: ขอซื้อ → อนุมัติ → รับสินค้าเข้าคลัง (สต็อกเพิ่มอัตโนมัติ และบันทึกลง stockMoves)</p>
+      <div class="chips" id="chips"></div>
+      <div id="prList"></div>
+    </section>
+  </main>
+
+  <!-- Modal รับสินค้า -->
+  <div class="modal" id="rcvModal">
+    <div class="box">
+      <h3>📥 รับสินค้าเข้าคลัง</h3>
+      <p class="hint" id="rcvInfo"></p>
+      <div class="rcv" style="font-size:12px;color:#64748b;border:0">
+        <span>สินค้า</span><span>สั่ง</span><span>รับจริง</span>
+      </div>
+      <div id="rcvList"></div>
+      <div class="actions" style="justify-content:flex-end">
+        <button class="btn ghost" id="rcvCancel">ยกเลิก</button>
+        <button class="btn green" id="rcvOk">✅ ยืนยันรับของ</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole, logout } from './guard.js';
+    import { esc, productPic } from './status.js';
+    import {
+      collection, doc, onSnapshot, setDoc, updateDoc, writeBatch, increment, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+    const $ = id => document.getElementById(id);
+
+    // สถานะใบขอซื้อ
+    const PR = {
+      pending:   { label: 'รออนุมัติ',            color: '#b45309', bg: '#fef3c7' },
+      approved:  { label: 'อนุมัติแล้ว · รอรับของ', color: '#1d4ed8', bg: '#dbeafe' },
+      received:  { label: 'รับของแล้ว',           color: '#15803d', bg: '#dcfce7' },
+      cancelled: { label: 'ยกเลิก',               color: '#64748b', bg: '#e2e8f0' }
+    };
+
+    let me = null;
+    let products = {};    // id -> product
+    let prs = [];         // ใบขอซื้อทั้งหมด
+    let draft = {};       // id -> { qty, cost, on }
+    let filter = 'all';
+    let receiving = null; // ใบขอซื้อที่กำลังรับของ
+
+    const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
+    const fmt = ts => ts?.toDate
+      ? ts.toDate().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })
+      : '-';
+    const defCost = p => p.cost ?? Math.round((p.price || 0) * 0.6);   // ไม่มีราคาทุน ใช้ 60% ของราคาขาย
+    const defQty  = p => p.eoq || Math.max((p.rop || 0) * 2, 10);
+
+    function newId() {
+      const d = new Date(), p = n => String(n).padStart(2, '0');
+      return 'PR' + String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
+        + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    }
+
+    // สินค้าที่มีใบขอซื้อค้างอยู่ (ยังไม่รับของ) จะไม่ถูกเลือกซ้ำอัตโนมัติ
+    function openIds() {
+      const s = new Set();
+      prs.filter(r => r.status === 'pending' || r.status === 'approved')
+         .forEach(r => r.items.forEach(i => s.add(i.id)));
+      return s;
+    }
+
+    const isLow = p => p.active !== false && (p.stock || 0) <= (p.rop || 0);
+
+    requireRole('admin', user => {
+      me = user;
+      document.body.style.visibility = 'visible';
+
+      onSnapshot(collection(db, 'products'), snap => {
+        products = {};
+        snap.forEach(d => products[d.id] = { id: d.id, ...d.data() });
+        renderAll();
+      });
+
+      onSnapshot(collection(db, 'purchases'), snap => {
+        prs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds ?? 9e12) - (a.createdAt?.seconds ?? 9e12));
+        renderAll();
+      });
+    });
+
+    function renderAll() {
+      syncDraft();
+      renderDraft();
+      renderPicker();
+      renderStats();
+      renderChips();
+      renderList();
+    }
+
+    // ---------- ร่างใบขอซื้อ ----------
+    function syncDraft() {
+      const open = openIds();
+      Object.values(products).forEach(p => {
+        if (isLow(p) && !draft[p.id]) {
+          draft[p.id] = { qty: defQty(p), cost: defCost(p), on: !open.has(p.id) };
+        }
+      });
+      // ลบสินค้าที่ถูกลบ/ซ่อนออกจากร่าง
+      Object.keys(draft).forEach(id => {
+        if (!products[id] || products[id].active === false) delete draft[id];
+      });
+    }
+
+    function renderDraft() {
+      const open = openIds();
+      const ids = Object.keys(draft);
+      if (!ids.length) {
+        $('draftList').innerHTML = '<div class="empty">✅ ไม่มีสินค้าที่ถึงจุดสั่งซื้อ เพิ่มสินค้าเองได้จากช่องด้านล่าง</div>';
+        updateTotal();
+        return;
+      }
+      $('draftList').innerHTML = ids.map(id => {
+        const p = products[id], d = draft[id];
+        const tags = [];
+        if ((p.stock || 0) <= 0) tags.push('<span class="tag" style="background:#fee2e2;color:#b91c1c">หมด</span>');
+        else if (isLow(p)) tags.push('<span class="tag" style="background:#fef3c7;color:#b45309">ถึง ROP</span>');
+        if (open.has(id)) tags.push('<span class="tag" style="background:#dbeafe;color:#1d4ed8">มีใบขอซื้อค้าง</span>');
+        return `
+          <div class="row ${d.on ? '' : 'off'}" data-id="${esc(id)}">
+            <input type="checkbox" class="chk" ${d.on ? 'checked' : ''}>
+            <div class="pic">${productPic(p)}</div>
+            <div class="name">${esc(p.name)} ${tags.join('')}
+              <small>${esc(id)} · คงเหลือ ${p.stock || 0} · ROP ${p.rop || '-'} · EOQ ${p.eoq || '-'}</small>
+            </div>
+            <input type="number" class="qty" min="1" value="${d.qty}">
+            <input type="number" class="cost c-cost" min="0" value="${d.cost}">
+            <div class="sub">${baht(d.qty * d.cost)}</div>
+          </div>`;
+      }).join('');
+      updateTotal();
+    }
+
+    // แก้ค่าในร่าง (ไม่ render ใหม่ทั้งหน้า เพื่อไม่ให้ช่องที่พิมพ์อยู่หลุด)
+    $('draftList').addEventListener('input', e => {
+      const row = e.target.closest('.row'); if (!row) return;
+      const d = draft[row.dataset.id];
+      if (e.target.classList.contains('qty'))  d.qty  = Math.max(0, Math.floor(+e.target.value || 0));
+      if (e.target.classList.contains('cost')) d.cost = Math.max(0, +e.target.value || 0);
+      if (e.target.classList.contains('chk'))  { d.on = e.target.checked; row.classList.toggle('off', !d.on); }
+      row.querySelector('.sub').textContent = baht(d.qty * d.cost);
+      updateTotal();
+    });
+
+    function updateTotal() {
+      const t = Object.values(draft).filter(d => d.on).reduce((s, d) => s + d.qty * d.cost, 0);
+      $('draftTotal').textContent = baht(t);
+    }
+
+    function renderPicker() {
+      const list = Object.values(products)
+        .filter(p => p.active !== false && !draft[p.id])
+        .sort((a, b) => a.id.localeCompare(b.id));
+      $('picker').innerHTML = '<option value="">— เลือกสินค้าอื่นที่ต้องการสั่ง —</option>'
+        + list.map(p => `<option value="${esc(p.id)}">${esc(p.id)} · ${esc(p.name)} (คงเหลือ ${p.stock || 0})</option>`).join('');
+    }
+
+    $('addBtn').addEventListener('click', () => {
+      const id = $('picker').value; if (!id) return;
+      const p = products[id];
+      draft[id] = { qty: defQty(p), cost: defCost(p), on: true };
+      renderDraft(); renderPicker();
+    });
+
+    $('createBtn').addEventListener('click', async () => {
+      const items = Object.entries(draft)
+        .filter(([id, d]) => d.on && products[id])
+        .map(([id, d]) => ({ id, name: products[id].name, icon: products[id].icon || '📦', qty: d.qty, cost: d.cost }));
+
+      if (!items.length) return alert('เลือกสินค้าอย่างน้อย 1 รายการ');
+      if (items.some(i => !(i.qty > 0))) return alert('จำนวนสั่งซื้อต้องมากกว่า 0');
+      const supplier = $('supplier').value.trim();
+      if (!supplier) { $('supplier').focus(); return alert('กรุณาใส่ชื่อผู้ขาย (Supplier)'); }
+
+      const id = newId();
+      const total = items.reduce((s, i) => s + i.qty * i.cost, 0);
+      $('createBtn').disabled = true;
+      try {
+        await setDoc(doc(db, 'purchases', id), {
+          items, supplier, total,
+          note: $('note').value.trim(),
+          status: 'pending',
+          createdBy: me.email,
+          createdAt: serverTimestamp()
+        });
+        items.forEach(i => delete draft[i.id]);
+        $('supplier').value = ''; $('note').value = '';
+        alert('ส่งใบขอซื้อ ' + id + ' แล้ว รออนุมัติ');
+        renderAll();
+      } catch (err) {
+        alert('บันทึกไม่สำเร็จ: ' + err.message);
+      }
+      $('createBtn').disabled = false;
+    });
+
+    // ---------- สถิติ ----------
+    function renderStats() {
+      const now = new Date();
+      $('sLow').textContent = Object.values(products).filter(isLow).length;
+      $('sPending').textContent = prs.filter(r => r.status === 'pending').length;
+      $('sApproved').textContent = prs.filter(r => r.status === 'approved').length;
+      const month = prs.filter(r => {
+        if (r.status === 'cancelled' || !r.createdAt?.toDate) return false;
+        const d = r.createdAt.toDate();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).reduce((s, r) => s + (r.total || 0), 0);
+      $('sMonth').textContent = baht(month);
+    }
+
+    // ---------- รายการใบขอซื้อ ----------
+    function renderChips() {
+      const opts = [['all', 'ทั้งหมด'], ...Object.entries(PR).map(([k, v]) => [k, v.label])];
+      $('chips').innerHTML = opts.map(([k, label]) => {
+        const n = k === 'all' ? prs.length : prs.filter(r => r.status === k).length;
+        return `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${label} (${n})</button>`;
+      }).join('');
+    }
+
+    $('chips').addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      filter = b.dataset.f; renderChips(); renderList();
+    });
+
+    function renderList() {
+      const list = filter === 'all' ? prs : prs.filter(r => r.status === filter);
+      if (!list.length) { $('prList').innerHTML = '<div class="empty">ยังไม่มีใบขอซื้อ</div>'; return; }
+
+      $('prList').innerHTML = list.map(r => {
+        const s = PR[r.status] || PR.pending;
+        const lines = r.items.map(i => {
+          const diff = r.status === 'received' && i.received !== undefined && i.received !== i.qty;
+          return `<tr>
+            <td>${esc(i.icon)} ${esc(i.name)} <small style="color:#94a3b8">${esc(i.id)}</small>
+              ${diff ? `<div class="warn">⚠️ รับจริง ${i.received} (สั่ง ${i.qty})</div>` : ''}</td>
+            <td class="r">${i.qty} × ${baht(i.cost)}</td>
+            <td class="r"><b>${baht(i.qty * i.cost)}</b></td>
+          </tr>`;
+        }).join('');
+
+        const steps = [
+          ['📝 ขอซื้อ', r.createdBy, r.createdAt, true],
+          ['✅ อนุมัติ', r.approvedBy, r.approvedAt, !!r.approvedAt],
+          ['📥 รับของ', r.receivedBy, r.receivedAt, !!r.receivedAt]
+        ];
+        const timeline = r.status === 'cancelled'
+          ? `<div class="step">❌ ยกเลิกโดย ${esc(r.cancelledBy || '-')} · ${fmt(r.cancelledAt)}</div>`
+          : steps.map(([t, by, at, done]) =>
+              `<div class="step ${done ? 'done' : ''}">${t}${done ? ` · ${esc(by || '-')} · ${fmt(at)}` : ''}</div>`).join('');
+
+        let actions = '';
+        if (r.status === 'pending') actions = `
+          <button class="btn primary" data-act="approve" data-id="${esc(r.id)}">✅ อนุมัติ</button>
+          <button class="btn danger" data-act="cancel" data-id="${esc(r.id)}">ยกเลิก</button>`;
+        if (r.status === 'approved') actions = `
+          <button class="btn green" data-act="receive" data-id="${esc(r.id)}">📥 รับสินค้าเข้าคลัง</button>
+          <button class="btn danger" data-act="cancel" data-id="${esc(r.id)}">ยกเลิก</button>`;
+
+        return `
+          <div class="pr" style="border-left-color:${s.color}">
+            <div class="pr-head">
+              <b>${esc(r.id)}</b>
+              <span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span>
+            </div>
+            <div class="meta">ผู้ขาย: <b>${esc(r.supplier)}</b>${r.note ? ' · ' + esc(r.note) : ''}</div>
+            <table class="lines">${lines}
+              <tr><td colspan="2" class="r">ยอดรวม</td><td class="r"><b style="color:#1d4ed8">${baht(r.total)}</b></td></tr>
+            </table>
+            <div class="timeline">${timeline}</div>
+            ${actions ? `<div class="actions">${actions}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    // ---------- ปุ่มในใบขอซื้อ ----------
+    $('prList').addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      const r = prs.find(x => x.id === b.dataset.id); if (!r) return;
+
+      try {
+        if (b.dataset.act === 'approve') {
+          // Segregation of Duties: ผู้ขอซื้อไม่ควรอนุมัติเอง
+          if (r.createdBy === me.email &&
+              !confirm('⚠️ คุณเป็นผู้สร้างใบขอซื้อนี้เอง\nตามหลัก Segregation of Duties ผู้อนุมัติควรเป็นคนละคน\n\nยืนยันอนุมัติต่อหรือไม่?')) return;
+          await updateDoc(doc(db, 'purchases', r.id), {
+            status: 'approved', approvedBy: me.email, approvedAt: serverTimestamp()
+          });
+        }
+        if (b.dataset.act === 'cancel') {
+          if (!confirm('ยกเลิกใบขอซื้อ ' + r.id + ' ?')) return;
+          await updateDoc(doc(db, 'purchases', r.id), {
+            status: 'cancelled', cancelledBy: me.email, cancelledAt: serverTimestamp()
+          });
+        }
+        if (b.dataset.act === 'receive') openReceive(r);
+      } catch (err) {
+        alert('ทำรายการไม่สำเร็จ: ' + err.message);
+      }
+    });
+
+    // ---------- รับสินค้า ----------
+    function openReceive(r) {
+      receiving = r;
+      $('rcvInfo').textContent = r.id + ' · ผู้ขาย ' + r.supplier + ' · ตรวจนับของจริงแล้วกรอกจำนวนที่ได้รับ';
+      $('rcvList').innerHTML = r.items.map((i, k) => `
+        <div class="rcv">
+          <span>${esc(i.icon)} ${esc(i.name)}</span>
+          <span>${i.qty}</span>
+          <input type="number" min="0" value="${i.qty}" data-k="${k}">
+        </div>`).join('');
+      $('rcvModal').classList.add('show');
+    }
+
+    const closeReceive = () => { $('rcvModal').classList.remove('show'); receiving = null; };
+    $('rcvCancel').addEventListener('click', closeReceive);
+
+    $('rcvOk').addEventListener('click', async () => {
+      const r = receiving; if (!r) return;
+      const got = [...$('rcvList').querySelectorAll('input')].map(el => Math.max(0, Math.floor(+el.value || 0)));
+      const mismatch = r.items.some((i, k) => got[k] !== i.qty);
+      if (mismatch && !confirm('จำนวนที่รับจริงไม่ตรงกับที่สั่ง ระบบจะบันทึกส่วนต่างไว้\nยืนยันหรือไม่?')) return;
+
+      const batch = writeBatch(db);
+      r.items.forEach((i, k) => {
+        const q = got[k];
+        if (q <= 0 || !products[i.id]) return;
+        const before = products[i.id].stock || 0;
+        batch.update(doc(db, 'products', i.id), { stock: increment(q) });
+        batch.set(doc(collection(db, 'stockMoves')), {
+          pid: i.id,
+          name: i.name,
+          type: 'purchase',
+          qty: q,
+          before,
+          after: before + q,
+          ref: r.id,
+          note: 'รับสินค้าตามใบขอซื้อ ' + r.id,
+          by: me.email,
+          at: serverTimestamp()
+        });
+      });
+      batch.update(doc(db, 'purchases', r.id), {
+        status: 'received',
+        items: r.items.map((i, k) => ({ ...i, received: got[k] })),
+        receivedBy: me.email,
+        receivedAt: serverTimestamp()
+      });
+
+      $('rcvOk').disabled = true;
+      try {
+        await batch.commit();
+        closeReceive();
+        alert('รับสินค้าเข้าคลังแล้ว สต็อกอัปเดตเรียบร้อย');
+      } catch (err) {
+        alert('รับของไม่สำเร็จ: ' + err.message);
+      }
+      $('rcvOk').disabled = false;
+    });
+
+    $('logoutBtn').addEventListener('click', logout);
+  </script>
+</body>
+</html>

@@ -3,21 +3,286 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ช่วยเหลือ | SecureVision</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>ช่วยเหลือ & เคลม | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
-    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; padding: 24px; box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Kanit', sans-serif; background: #f1f5f9; color: #0f172a; padding-bottom: 90px; }
+    header { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; }
+    header h1 { font-size: 20px; font-weight: 500; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+    .card h2 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .hint { font-size: 13px; color: #64748b; margin-bottom: 14px; }
+    .contact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .contact a { display: block; text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 6px; text-decoration: none; color: #0f172a; font-size: 13px; }
+    .contact a b { display: block; font-size: 22px; margin-bottom: 4px; }
+    label { display: block; font-size: 13px; color: #475569; margin: 12px 0 4px; }
+    input, select, textarea { font: inherit; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; width: 100%; background: #fff; }
+    textarea { min-height: 90px; resize: vertical; }
+    .btn { border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px; }
+    .btn.primary { background: #2563eb; color: #fff; }
+    .btn.ghost { background: #fff; border: 1px solid #cbd5e1; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .warranty { margin-top: 8px; font-size: 13px; padding: 8px 12px; border-radius: 10px; }
+    .preview { margin-top: 10px; display: none; position: relative; width: 140px; }
+    .preview img { width: 140px; height: 140px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .preview button { position: absolute; top: 4px; right: 4px; border: 0; border-radius: 99px; width: 26px; height: 26px; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; }
+    .login-box { text-align: center; padding: 10px 0; }
+    .login-box a { display: inline-block; margin-top: 12px; background: #2563eb; color: #fff; padding: 10px 22px; border-radius: 12px; text-decoration: none; }
+    .claim { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 12px; border-left: 5px solid #cbd5e1; }
+    .claim-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .badge { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+    .meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .detail { font-size: 14px; margin-top: 8px; }
+    .claim img { width: 90px; height: 90px; object-fit: cover; border-radius: 10px; margin-top: 8px; }
+    .reply { margin-top: 10px; background: #eff6ff; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+    .steps { display: flex; gap: 4px; margin-top: 10px; }
+    .steps div { flex: 1; height: 6px; border-radius: 99px; background: #e2e8f0; }
+    .steps div.on { background: #2563eb; }
+    .empty { text-align: center; color: #94a3b8; padding: 20px; font-size: 14px; }
+    details { border-top: 1px solid #f1f5f9; padding: 12px 0; }
+    details summary { cursor: pointer; font-size: 15px; }
+    details p { font-size: 14px; color: #475569; margin-top: 8px; line-height: 1.6; }
   </style>
 </head>
 <body>
-  <div class="app">
-    <h2>❓ ช่วยเหลือ</h2>
-    <p>กำลังจะทำในขั้นต่อไป</p>
-  </div>
+  <header><h1>🛟 ช่วยเหลือ & แจ้งเคลม</h1></header>
+
+  <main>
+    <!-- ติดต่อ -->
+    <section class="card">
+      <h2>📞 ติดต่อเรา</h2>
+      <p class="hint">ทุกวัน 08:30–18:00 น.</p>
+      <div class="contact">
+        <a href="tel:0381234567"><b>☎️</b>038-123-4567</a>
+        <a href="#"><b>💬</b>LINE @securevision</a>
+        <a href="mailto:support@securevision.com"><b>✉️</b>อีเมล</a>
+      </div>
+    </section>
+
+    <!-- แจ้งเคลม -->
+    <section class="card" id="claimCard">
+      <h2>🛠️ แจ้งเคลม / แจ้งซ่อม</h2>
+      <p class="hint">สินค้ารับประกัน 1 ปี นับจากวันสั่งซื้อ เลือกได้เฉพาะออเดอร์ที่จัดส่ง/ติดตั้งเสร็จแล้ว</p>
+      <div id="claimArea"><div class="empty">กำลังโหลด...</div></div>
+    </section>
+
+    <!-- ประวัติเคลม -->
+    <section class="card" id="historyCard" style="display:none">
+      <h2>📋 รายการเคลมของฉัน</h2>
+      <div id="myClaims"></div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="card">
+      <h2>❓ คำถามที่พบบ่อย</h2>
+      <details><summary>รับประกันสินค้ากี่ปี?</summary><p>สินค้าทุกชิ้นรับประกัน 1 ปี นับจากวันสั่งซื้อ ครอบคลุมความเสียหายจากการใช้งานปกติ ไม่รวมความเสียหายจากอุบัติเหตุ น้ำท่วม หรือฟ้าผ่า</p></details>
+      <details><summary>แจ้งเคลมแล้วใช้เวลากี่วัน?</summary><p>เจ้าหน้าที่ตรวจสอบภายใน 1–2 วันทำการ หากต้องซ่อมจะนัดช่างเข้าไปที่บ้าน หากต้องเปลี่ยนจะจัดส่งสินค้าใหม่ให้</p></details>
+      <details><summary>กล้องออฟไลน์ ดูภาพในแอปไม่ได้ ทำอย่างไร?</summary><p>ลองถอดปลั๊กกล้องและเราเตอร์ รอ 10 วินาทีแล้วเสียบใหม่ ถ้ายังไม่ได้ให้แจ้งเคลมพร้อมแนบภาพหน้าจอ</p></details>
+      <details><summary>ถ้าไม่อยู่บ้านวันนัดช่างทำอย่างไร?</summary><p>ติดต่อเราทางโทรศัพท์หรือ LINE เพื่อเลื่อนนัดล่วงหน้าอย่างน้อย 1 วัน</p></details>
+    </section>
+  </main>
+
   <script type="module">
+    import { auth, db } from './firebase.js';
     import { renderNav } from './nav.js';
+    import { esc, compressImage } from './status.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+    import {
+      collection, doc, getDoc, getDocs, setDoc, onSnapshot, query, where, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
     renderNav('help');
+    const $ = id => document.getElementById(id);
+
+    const CLAIM = {
+      open:      { label: 'รอตรวจสอบ',       color: '#b45309', bg: '#fef3c7', step: 1 },
+      reviewing: { label: 'กำลังตรวจสอบ',     color: '#7c3aed', bg: '#ede9fe', step: 2 },
+      repair:    { label: 'นัดช่างซ่อม',      color: '#1d4ed8', bg: '#dbeafe', step: 3 },
+      replace:   { label: 'เปลี่ยนสินค้าใหม่', color: '#0e7490', bg: '#cffafe', step: 3 },
+      done:      { label: 'เสร็จสิ้น',         color: '#15803d', bg: '#dcfce7', step: 4 },
+      rejected:  { label: 'ไม่อนุมัติ',         color: '#b91c1c', bg: '#fee2e2', step: 4 }
+    };
+    const TYPES = ['สินค้าใช้งานไม่ได้ / เปิดไม่ติด', 'ภาพไม่ชัด / สัญญาณหลุด', 'ชำรุดเสียหายตั้งแต่ได้รับ', 'ติดตั้งไม่เรียบร้อย', 'อื่นๆ'];
+    const WARRANTY_DAYS = 365;
+
+    let user = null, orders = [], products = {}, claims = [], profile = {}, image = '';
+
+    const fmtDate = ts => ts?.toDate ? ts.toDate().toLocaleDateString('th-TH', { dateStyle: 'medium' }) : '-';
+
+    function newId() {
+      const d = new Date(), p = n => String(n).padStart(2, '0');
+      return 'CL' + String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
+        + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    }
+
+    // รองรับ items ทั้งแบบ array และแบบ object
+    function orderItems(o) {
+      const raw = Array.isArray(o.items) ? o.items
+        : Object.entries(o.items || {}).map(([id, v]) => typeof v === 'object' ? { id, ...v } : { id, qty: v });
+      return raw.map(i => ({ ...i, name: i.name || products[i.id]?.name || i.id }));
+    }
+
+    function warrantyLeft(o) {
+      if (!o.createdAt?.toDate) return WARRANTY_DAYS;
+      const end = o.createdAt.toDate().getTime() + WARRANTY_DAYS * 864e5;
+      return Math.ceil((end - Date.now()) / 864e5);
+    }
+
+    onAuthStateChanged(auth, async u => {
+      user = u;
+      if (!u) {
+        $('claimArea').innerHTML = `
+          <div class="login-box">
+            <div>เข้าสู่ระบบก่อนแจ้งเคลม</div>
+            <a href="login.html?role=customer">เข้าสู่ระบบ</a>
+          </div>`;
+        return;
+      }
+
+      const [ps, pf, os] = await Promise.all([
+        getDocs(collection(db, 'products')),
+        getDoc(doc(db, 'profiles', u.uid)),
+        getDocs(query(collection(db, 'orders'), where('uid', '==', u.uid)))
+      ]);
+      ps.forEach(d => products[d.id] = d.data());
+      profile = pf.exists() ? pf.data() : {};
+      orders = os.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(o => o.status === 'completed')
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+      renderForm();
+
+      onSnapshot(query(collection(db, 'claims'), where('uid', '==', u.uid)), snap => {
+        claims = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds ?? 9e12) - (a.createdAt?.seconds ?? 9e12));
+        renderClaims();
+      });
+    });
+
+    // ---------- ฟอร์มแจ้งเคลม ----------
+    function renderForm() {
+      if (!orders.length) {
+        $('claimArea').innerHTML = '<div class="empty">ยังไม่มีออเดอร์ที่จัดส่ง/ติดตั้งเสร็จ จึงยังแจ้งเคลมไม่ได้</div>';
+        return;
+      }
+      $('claimArea').innerHTML = `
+        <label>เลือกออเดอร์</label>
+        <select id="fOrder">
+          ${orders.map(o => `<option value="${esc(o.id)}">${esc(o.id)} · ${fmtDate(o.createdAt)}</option>`).join('')}
+        </select>
+        <div id="fWarranty" class="warranty"></div>
+
+        <label>สินค้าที่มีปัญหา</label>
+        <select id="fItem"></select>
+
+        <label>ประเภทปัญหา</label>
+        <select id="fType">${TYPES.map(t => `<option>${t}</option>`).join('')}</select>
+
+        <label>รายละเอียดอาการ *</label>
+        <textarea id="fDetail" placeholder="เช่น กล้องตัวหน้าบ้านดับตั้งแต่เมื่อวาน ไฟสถานะไม่ติด"></textarea>
+
+        <label>📷 รูปประกอบ (ถ้ามี)</label>
+        <input type="file" id="fImage" accept="image/*">
+        <div class="preview" id="fPreview"><img id="fPreviewImg"><button type="button" id="fClear">✕</button></div>
+
+        <label>เบอร์ติดต่อกลับ *</label>
+        <input id="fPhone" value="${esc(profile.phone || '')}" placeholder="08x-xxx-xxxx">
+
+        <button class="btn primary" id="fSubmit">📨 ส่งเรื่องเคลม</button>`;
+
+      $('fOrder').addEventListener('change', onOrderChange);
+      $('fImage').addEventListener('change', async e => {
+        const f = e.target.files[0]; if (!f) return;
+        image = await compressImage(f, 900, 0.7);
+        $('fPreviewImg').src = image; $('fPreview').style.display = 'block';
+      });
+      $('fClear').addEventListener('click', () => {
+        image = ''; $('fImage').value = ''; $('fPreview').style.display = 'none';
+      });
+      $('fSubmit').addEventListener('click', submitClaim);
+      onOrderChange();
+    }
+
+    function onOrderChange() {
+      const o = orders.find(x => x.id === $('fOrder').value);
+      $('fItem').innerHTML = orderItems(o).map(i => `<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
+      const left = warrantyLeft(o);
+      const w = $('fWarranty');
+      if (left > 0) {
+        w.style.background = '#ecfdf5'; w.style.color = '#15803d';
+        w.textContent = '✅ อยู่ในระยะรับประกัน เหลืออีก ' + left + ' วัน';
+        $('fSubmit').disabled = false;
+      } else {
+        w.style.background = '#fee2e2'; w.style.color = '#b91c1c';
+        w.textContent = '❌ หมดระยะรับประกันแล้ว กรุณาติดต่อเจ้าหน้าที่เพื่อแจ้งซ่อมแบบมีค่าใช้จ่าย';
+        $('fSubmit').disabled = true;
+      }
+    }
+
+    async function submitClaim() {
+      const o = orders.find(x => x.id === $('fOrder').value);
+      const item = orderItems(o).find(i => i.id === $('fItem').value);
+      const detail = $('fDetail').value.trim();
+      const phone = $('fPhone').value.trim();
+      if (!detail) { $('fDetail').focus(); return alert('กรุณาอธิบายอาการ'); }
+      if (!phone) { $('fPhone').focus(); return alert('กรุณาใส่เบอร์ติดต่อกลับ'); }
+
+      // กันแจ้งซ้ำ: สินค้าเดียวกันในออเดอร์เดียวกันที่ยังไม่ปิดเรื่อง
+      const dup = claims.find(c => c.orderId === o.id && c.productId === item.id && !['done', 'rejected'].includes(c.status));
+      if (dup) return alert('สินค้านี้มีเรื่องเคลมที่ยังไม่ปิดอยู่แล้ว (' + dup.id + ')');
+
+      const id = newId();
+      const data = {
+        uid: user.uid,
+        orderId: o.id,
+        productId: item.id,
+        productName: item.name,
+        type: $('fType').value,
+        detail, phone,
+        customerName: profile.name || user.email,
+        address: profile.address || '',
+        status: 'open',
+        createdAt: serverTimestamp()
+      };
+      if (image) data.image = image;
+
+      $('fSubmit').disabled = true;
+      try {
+        await setDoc(doc(db, 'claims', id), data);
+        alert('ส่งเรื่องเคลมแล้ว เลขที่ ' + id + '\nเจ้าหน้าที่จะติดต่อกลับภายใน 1–2 วันทำการ');
+        $('fDetail').value = ''; $('fClear').click();
+      } catch (err) {
+        alert('ส่งไม่สำเร็จ: ' + err.message);
+      }
+      $('fSubmit').disabled = false;
+    }
+
+    // ---------- รายการเคลมของฉัน ----------
+    function renderClaims() {
+      $('historyCard').style.display = claims.length ? 'block' : 'none';
+      $('myClaims').innerHTML = claims.map(c => {
+        const s = CLAIM[c.status] || CLAIM.open;
+        const bars = [1, 2, 3, 4].map(n => `<div class="${n <= s.step ? 'on' : ''}" style="${n <= s.step ? 'background:' + s.color : ''}"></div>`).join('');
+        let reply = '';
+        if (c.status === 'repair') reply = `🔧 นัดช่าง <b>${esc(c.techName || '-')}</b> วันที่ <b>${esc(c.appointDate || '-')}</b>`;
+        if (c.status === 'replace') reply = '🔁 อนุมัติเปลี่ยนสินค้าใหม่ จะจัดส่งให้เร็วที่สุด';
+        if (c.reply) reply += (reply ? '<br>' : '') + '💬 ' + esc(c.reply);
+        return `
+          <div class="claim" style="border-left-color:${s.color}">
+            <div class="claim-head">
+              <b>${esc(c.id)}</b>
+              <span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span>
+            </div>
+            <div class="meta">${esc(c.productName)} · ออเดอร์ ${esc(c.orderId)} · ${fmtDate(c.createdAt)}</div>
+            <div class="detail"><b>${esc(c.type)}</b> — ${esc(c.detail)}</div>
+            ${typeof c.image === 'string' && c.image.startsWith('data:image/') ? `<img src="${c.image}" alt="">` : ''}
+            <div class="steps">${bars}</div>
+            ${reply ? `<div class="reply">${reply}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
   </script>
 </body>
 </html>
