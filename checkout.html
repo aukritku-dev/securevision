@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ยืนยันคำสั่งซื้อ | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #2563eb; color: white; padding: 18px 20px; font-size: 20px; font-weight: 600; display: flex; gap: 14px; align-items: center; }
+    header a { color: white; text-decoration: none; }
+    main { padding: 16px; }
+
+    .card { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+    .card h3 { margin: 0 0 12px; font-size: 17px; display: flex; align-items: center; }
+    .step { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: white; font-size: 13px; align-items: center; justify-content: center; margin-right: 8px; }
+
+    label.field { display: block; font-size: 14px; color: #475569; margin-bottom: 4px; }
+    input[type=text], input[type=tel], input[type=date], textarea { width: 100%; padding: 11px; border: 1px solid #dde3ef; border-radius: 10px; font-size: 15px; font-family: inherit; margin-bottom: 10px; }
+    .hint { font-size: 12px; color: #64748b; margin: -6px 0 6px; }
+
+    .option { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #dde3ef; border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+    .option input { margin-top: 5px; }
+    .option small { display: block; color: #64748b; }
+    .option:has(input:checked) { border-color: #2563eb; background: #eff4ff; }
+
+    .line { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; gap: 10px; }
+    .line span:first-child { color: #475569; }
+    .total { display: flex; justify-content: space-between; font-weight: 600; font-size: 18px; border-top: 1px dashed #dde3ef; padding-top: 10px; margin-top: 6px; }
+    .total span:last-child { color: #dc2626; }
+
+    .place { width: 100%; background: #2563eb; color: white; border: none; border-radius: 12px; padding: 14px; font-size: 17px; font-family: inherit; cursor: pointer; }
+    .place:disabled { background: #94a3b8; cursor: wait; }
+
+    .done { text-align: center; padding: 30px 10px; }
+    .done .big { font-size: 64px; }
+    .done h2 { margin: 6px 0; }
+    .done .no { font-size: 20px; font-weight: 600; color: #2563eb; letter-spacing: 1px; }
+    .done .qrimg { display: block; width: 100%; max-width: 260px; margin: 12px auto; border-radius: 12px; }
+    .done .amt { font-size: 28px; font-weight: 600; color: #dc2626; }
+    .done .muted { color: #64748b; font-size: 14px; }
+    .done a { display: block; padding: 12px; border-radius: 12px; text-decoration: none; margin-top: 10px; }
+    .done a.primary { background: #2563eb; color: white; }
+    .done a.ghost { border: 1px solid #dde3ef; color: #0f172a; background: white; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header><a href="cart.html">←</a> ยืนยันคำสั่งซื้อ</header>
+
+    <main id="main">
+      <div class="card">
+        <h3><span class="step">1</span>ข้อมูลผู้รับ</h3>
+        <label class="field">ชื่อ-นามสกุล *</label>
+        <input type="text" id="name">
+        <label class="field">เบอร์โทรศัพท์ *</label>
+        <input type="tel" id="phone" placeholder="08xxxxxxxx">
+        <label class="field">ที่อยู่จัดส่ง/ติดตั้ง *</label>
+        <textarea id="address" rows="3"></textarea>
+      </div>
+
+      <div class="card">
+        <h3><span class="step">2</span>บริการติดตั้ง</h3>
+        <label class="option">
+          <input type="checkbox" id="install">
+          <div><b>🔧 ต้องการให้ช่างติดตั้ง</b><small>ค่าบริการ ฿590 ต่อคำสั่งซื้อ · ช่างจะโทรนัดก่อนเข้า</small></div>
+        </label>
+        <div id="dateBox" style="display: none;">
+          <label class="field">วันที่สะดวกให้ช่างเข้า *</label>
+          <input type="date" id="installDate">
+          <p class="hint">เลือกจากปฏิทิน (ปี ค.ศ.) ภายใน 3 เดือน</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="step">3</span>วิธีชำระเงิน</h3>
+        <label class="option">
+          <input type="radio" name="pay" value="transfer" checked>
+          <div><b>📱 สแกน QR โอนเงิน</b><small>แสดง QR หลังสั่งซื้อ แล้วแนบสลิปเพื่อยืนยัน</small></div>
+        </label>
+        <label class="option">
+          <input type="radio" name="pay" value="cod">
+          <div><b>💵 ชำระเงินปลายทาง</b><small>จ่ายเมื่อได้รับสินค้าหรือติดตั้งเสร็จ</small></div>
+        </label>
+      </div>
+
+      <div class="card">
+        <h3><span class="step">4</span>สรุปคำสั่งซื้อ</h3>
+        <div id="lines"></div>
+        <div class="line"><span>รวมค่าสินค้า</span><span id="subtotal"></span></div>
+        <div class="line"><span>ค่าจัดส่ง</span><span id="ship"></span></div>
+        <div class="line" id="installLine" style="display: none;"><span>ค่าติดตั้ง</span><span>฿590</span></div>
+        <div class="total"><span>ยอดชำระ</span><span id="total"></span></div>
+      </div>
+
+      <button class="place" id="placeBtn">ยืนยันสั่งซื้อ</button>
+    </main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole } from './guard.js';
+    import { SHOP, todayStr } from './status.js';
+    import { collection, doc, getDoc, getDocs, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const SHIP_FEE = 50;
+    const FREE_SHIP_MIN = 1000;
+    const INSTALL_FEE = 590;
+
+    // ช่วงวันที่นัดติดตั้งได้: วันนี้ ถึง อีก 3 เดือน
+    const MIN_DATE = todayStr();
+    const MAX_DATE = (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 3);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    })();
+
+    let user = null;
+    let cartLines = [];
+
+    const $ = id => document.getElementById(id);
+
+    // 1) ตรวจสิทธิ์ → โหลดโปรไฟล์ + ตะกร้า + สินค้า
+    requireRole('customer', async function (u) {
+      user = u;
+
+      const prof = await getDoc(doc(db, 'profiles', u.uid));
+      if (prof.exists()) {
+        const p = prof.data();
+        $('name').value = p.name || '';
+        $('phone').value = p.phone || '';
+        $('address').value = p.address || '';
+      }
+
+      const cartSnap = await getDoc(doc(db, 'carts', u.uid));
+      const items = cartSnap.exists() ? (cartSnap.data().items || {}) : {};
+      const prodSnap = await getDocs(collection(db, 'products'));
+      const products = {};
+      prodSnap.forEach(d => { products[d.id] = d.data(); });
+
+      cartLines = Object.keys(items)
+        .filter(id => items[id] > 0 && products[id])
+        .map(id => ({ id, name: products[id].name, price: products[id].price, qty: items[id] }));
+
+      if (cartLines.length === 0) {
+        window.location.href = 'cart.html';
+        return;
+      }
+
+      // ปฏิทินเลือกได้แค่ช่วงที่กำหนด
+      $('installDate').min = MIN_DATE;
+      $('installDate').max = MAX_DATE;
+
+      renderSummary();
+      document.body.style.visibility = 'visible';
+    });
+
+    // 2) คำนวณยอด
+    function calc() {
+      const subtotal = cartLines.reduce((sum, l) => sum + l.price * l.qty, 0);
+      const ship = subtotal >= FREE_SHIP_MIN ? 0 : SHIP_FEE;
+      const install = $('install').checked;
+      const installFee = install ? INSTALL_FEE : 0;
+      return { subtotal, ship, install, installFee, total: subtotal + ship + installFee };
+    }
+
+    // 3) แสดงสรุปยอด
+    function renderSummary() {
+      $('lines').innerHTML = cartLines.map(l => `
+        <div class="line"><span>${l.name} × ${l.qty}</span><span>฿${(l.price * l.qty).toLocaleString()}</span></div>
+      `).join('');
+
+      const c = calc();
+      $('subtotal').textContent = '฿' + c.subtotal.toLocaleString();
+      $('ship').textContent = c.ship === 0 ? 'ฟรี' : '฿' + c.ship;
+      $('installLine').style.display = c.install ? 'flex' : 'none';
+      $('dateBox').style.display = c.install ? 'block' : 'none';
+      $('total').textContent = '฿' + c.total.toLocaleString();
+    }
+    $('install').addEventListener('change', renderSummary);
+
+    // 4) เลขที่คำสั่งซื้อ
+    function makeOrderNo() {
+      const d = new Date();
+      const ymd = String(d.getFullYear()).slice(2)
+        + String(d.getMonth() + 1).padStart(2, '0')
+        + String(d.getDate()).padStart(2, '0');
+      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+      return 'SV' + ymd + '-' + rand;
+    }
+
+    // 5) ตรวจวันที่นัดติดตั้ง → คืนข้อความเตือน หรือ '' ถ้าถูกต้อง
+    function checkInstallDate(v) {
+      if (!v) return 'กรุณาเลือกวันที่สะดวกให้ช่างเข้าติดตั้ง';
+      const year = Number(v.slice(0, 4));
+      if (year > 2400) return `ปี ${year} เป็นปี พ.ศ. กรุณาเลือกจากปฏิทินให้เป็นปี ค.ศ. (${year - 543})`;
+      if (v < MIN_DATE) return 'เลือกวันย้อนหลังไม่ได้';
+      if (v > MAX_DATE) return 'นัดติดตั้งได้ล่วงหน้าไม่เกิน 3 เดือน';
+      return '';
+    }
+
+    // 6) กดยืนยันสั่งซื้อ
+    $('placeBtn').addEventListener('click', async () => {
+      const name = $('name').value.trim();
+      const phone = $('phone').value.replace(/[-\s]/g, '');
+      const address = $('address').value.trim();
+      const c = calc();
+      const payment = document.querySelector('input[name="pay"]:checked').value;
+
+      if (!name || !phone || !address) {
+        alert('กรุณากรอกชื่อ เบอร์โทร และที่อยู่ให้ครบ');
+        return;
+      }
+      if (!/^0\d{8,9}$/.test(phone)) {
+        alert('เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวเลข 9–10 หลัก ขึ้นต้นด้วย 0)');
+        return;
+      }
+      if (c.install) {
+        const dateError = checkInstallDate($('installDate').value);
+        if (dateError) {
+          alert(dateError);
+          return;
+        }
+      }
+
+      const btn = $('placeBtn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังสั่งซื้อ...';
+
+      const orderNo = makeOrderNo();
+      try {
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'orders', orderNo), {
+          uid: user.uid,
+          email: user.email,
+          items: cartLines,
+          subtotal: c.subtotal,
+          shipFee: c.ship,
+          install: c.install,
+          installFee: c.installFee,
+          installDate: c.install ? $('installDate').value : null,
+          total: c.total,
+          shipping: { name, phone, address },
+          payment,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        batch.delete(doc(db, 'carts', user.uid));
+        await batch.commit();
+        showDone(orderNo, c.total, payment);
+      } catch (error) {
+        console.log(error.code);
+        alert('สั่งซื้อไม่สำเร็จ: ' + error.code);
+        btn.disabled = false;
+        btn.textContent = 'ยืนยันสั่งซื้อ';
+      }
+    });
+
+    // 7) หน้าหลังสร้างคำสั่งซื้อ
+    function showDone(orderNo, total, payment) {
+      const amount = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      $('main').scrollIntoView();
+
+      if (payment === 'transfer') {
+        $('main').innerHTML = `
+          <div class="done">
+            <div class="big">⏳</div>
+            <h2>รอชำระเงิน</h2>
+            <p class="muted">เลขที่คำสั่งซื้อ</p>
+            <div class="no">${orderNo}</div>
+            <img class="qrimg" src="${SHOP.qrImage}" alt="QR ชำระเงิน">
+            <p class="muted">สแกนแล้วกรอกยอดเงิน</p>
+            <div class="amt">฿${amount}</div>
+            <p class="muted">โอนแล้วกดปุ่มด้านล่างเพื่อแนบสลิป<br>ร้านจะยืนยันคำสั่งซื้อหลังตรวจสลิป</p>
+            <a class="primary" href="orders.html?open=${orderNo}">📎 แนบสลิปโอนเงิน</a>
+            <a class="ghost" href="products.html">ไว้จ่ายทีหลัง / เลือกซื้อสินค้าต่อ</a>
+          </div>`;
+      } else {
+        $('main').innerHTML = `
+          <div class="done">
+            <div class="big">✅</div>
+            <h2>สั่งซื้อสำเร็จ!</h2>
+            <p class="muted">เลขที่คำสั่งซื้อ</p>
+            <div class="no">${orderNo}</div>
+            <p>ชำระเงินปลายทาง <b>฿${amount}</b></p>
+            <p class="muted">ร้านจะตรวจสอบและยืนยันคำสั่งซื้อโดยเร็ว</p>
+            <a class="primary" href="orders.html?open=${orderNo}">📦 ดูคำสั่งซื้อ</a>
+            <a class="ghost" href="products.html">เลือกซื้อสินค้าต่อ</a>
+          </div>`;
+      }
+    }
+  </script>
+</body>
+</html>

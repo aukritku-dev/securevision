@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สินค้าทั้งหมด | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+
+    header { background: #2563eb; color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 5; }
+    .top { display: flex; align-items: center; justify-content: space-between; }
+    .top b { font-size: 20px; }
+    .cart { position: relative; font-size: 24px; text-decoration: none; }
+    .badge { position: absolute; top: -6px; right: -10px; background: #ef4444; color: white; font-size: 12px; border-radius: 999px; padding: 1px 6px; }
+    .search { margin-top: 12px; width: 100%; padding: 12px 14px; border: none; border-radius: 12px; font-size: 16px; font-family: inherit; }
+
+    .chips { display: flex; gap: 8px; overflow-x: auto; padding: 14px 16px 4px; }
+    .chip { flex-shrink: 0; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 6px 14px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .chip.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+    .bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; color: #64748b; font-size: 14px; }
+    .bar select { font-family: inherit; font-size: 14px; padding: 6px; border: 1px solid #dde3ef; border-radius: 8px; background: white; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 16px; }
+    .card { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; }
+    .pic { position: relative; background: #f1f4f9; border-radius: 10px; height: 130px; display: flex; align-items: center; justify-content: center; font-size: 44px; overflow: hidden; }
+    .off { position: absolute; top: 6px; left: 6px; background: #ef4444; color: white; font-size: 12px; padding: 2px 6px; border-radius: 6px; z-index: 1; }
+    .name { font-size: 14px; margin: 8px 0 4px; flex: 1; }
+    .price { color: #dc2626; font-weight: 600; font-size: 18px; }
+    .old { color: #94a3b8; text-decoration: line-through; font-size: 13px; margin-left: 4px; font-weight: 400; }
+    .add { margin-top: 8px; background: #2563eb; color: white; border: none; border-radius: 10px; padding: 8px; font-family: inherit; cursor: pointer; }
+    .add.done { background: #16a34a; }
+    .empty { grid-column: 1 / -1; text-align: center; color: #64748b; padding: 30px 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="top">
+        <b>🏪 สินค้าทั้งหมด</b>
+        <a class="cart" href="cart.html">🛒<span class="badge" id="cartCount">0</span></a>
+      </div>
+      <input class="search" id="search" placeholder="🔍 ค้นหาสินค้า...">
+    </header>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="bar">
+      <span id="count">กำลังโหลด...</span>
+      <select id="sort">
+        <option value="default">เรียงตาม: แนะนำ</option>
+        <option value="low">ราคา: ต่ำ → สูง</option>
+        <option value="high">ราคา: สูง → ต่ำ</option>
+      </select>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { collection, doc, onSnapshot, setDoc, increment } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import { renderNav } from './nav.js';
+    import { CATEGORIES, esc, productPic } from './status.js';
+
+    renderNav('products');
+
+    const categories = [
+      { id: 'all', name: 'ทั้งหมด' },
+      ...CATEGORIES.map(c => ({ id: c.id, name: c.icon + ' ' + c.name }))
+    ];
+
+    let currentCat = new URLSearchParams(window.location.search).get('cat') || 'all';
+    let products = [];
+    let user = null;
+    let stopCartListener = null;
+
+    // 1) ฟังสินค้า (เฉพาะที่ไม่ได้ซ่อน)
+    onSnapshot(collection(db, 'products'), snap => {
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.active !== false);
+      renderProducts();
+    });
+
+    // 2) แคปซูลหมวดหมู่
+    function renderChips() {
+      document.getElementById('chips').innerHTML = categories.map(c => `
+        <button class="chip ${c.id === currentCat ? 'active' : ''}" data-id="${c.id}">${c.name}</button>
+      `).join('');
+    }
+
+    // 3) กรอง → เรียง → แสดง
+    function renderProducts() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const sort = document.getElementById('sort').value;
+
+      let list = products.filter(p =>
+        (currentCat === 'all' || p.cat === currentCat) && p.name.toLowerCase().includes(q)
+      );
+
+      if (sort === 'low')       list.sort((a, b) => a.price - b.price);
+      else if (sort === 'high') list.sort((a, b) => b.price - a.price);
+      else                      list.sort((a, b) => a.id.localeCompare(b.id));
+
+      document.getElementById('count').textContent = 'พบ ' + list.length + ' รายการ';
+
+      const grid = document.getElementById('grid');
+      if (list.length === 0) {
+        grid.innerHTML = '<p class="empty">ไม่พบสินค้าที่ค้นหา</p>';
+        return;
+      }
+
+      grid.innerHTML = list.map(p => {
+        const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+        return `
+          <div class="card">
+            <div class="pic">${off ? `<span class="off">-${off}%</span>` : ''}${productPic(p)}</div>
+            <div class="name">${esc(p.name)}</div>
+            <div class="price">฿${p.price.toLocaleString()}${p.oldPrice ? `<span class="old">฿${p.oldPrice.toLocaleString()}</span>` : ''}</div>
+            <button class="add" data-id="${esc(p.id)}">🛒 เพิ่มใส่ตะกร้า</button>
+          </div>`;
+      }).join('');
+    }
+
+    // 4) กดแคปซูล
+    document.getElementById('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      currentCat = btn.dataset.id;
+      renderChips();
+      renderProducts();
+    });
+
+    // 5) ค้นหา / เรียง
+    document.getElementById('search').addEventListener('input', renderProducts);
+    document.getElementById('sort').addEventListener('change', renderProducts);
+
+    // 6) เพิ่มใส่ตะกร้า
+    document.getElementById('grid').addEventListener('click', async e => {
+      const btn = e.target.closest('.add');
+      if (!btn) return;
+      if (!user) {
+        alert('กรุณาเข้าสู่ระบบก่อนสั่งซื้อ');
+        window.location.href = 'login.html?role=customer';
+        return;
+      }
+      try {
+        await setDoc(doc(db, 'carts', user.uid), { items: { [btn.dataset.id]: increment(1) } }, { merge: true });
+        btn.textContent = '✅ เพิ่มแล้ว';
+        btn.classList.add('done');
+        setTimeout(() => {
+          btn.textContent = '🛒 เพิ่มใส่ตะกร้า';
+          btn.classList.remove('done');
+        }, 1000);
+      } catch (error) {
+        console.log(error.code);
+        alert('เพิ่มสินค้าไม่สำเร็จ: ' + error.code);
+      }
+    });
+
+    // 7) สถานะล็อกอิน → จำนวนในตะกร้า
+    onAuthStateChanged(auth, u => {
+      user = u;
+      const badge = document.getElementById('cartCount');
+      if (stopCartListener) { stopCartListener(); stopCartListener = null; }
+      if (u) {
+        stopCartListener = onSnapshot(doc(db, 'carts', u.uid), snap => {
+          const items = snap.exists() ? (snap.data().items || {}) : {};
+          badge.textContent = Object.values(items).reduce((sum, qty) => sum + qty, 0);
+        });
+      } else {
+        badge.textContent = 0;
+      }
+    });
+
+    renderChips();
+  </script>
+</body>
+</html>

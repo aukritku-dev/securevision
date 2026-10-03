@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คำสั่งซื้อของฉัน | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #2563eb; color: white; padding: 18px 20px; font-size: 20px; font-weight: 600; display: flex; gap: 14px; align-items: center; }
+    header a { color: white; text-decoration: none; }
+    main { padding: 16px; }
+
+    .order { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 14px; margin-bottom: 12px; cursor: pointer; }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .no { font-weight: 600; }
+    .date { font-size: 13px; color: #64748b; }
+    .sum { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; color: #475569; }
+    .sum b { color: #dc2626; font-size: 16px; }
+    .more { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 6px; }
+    .needpay { color: #b45309; font-size: 13px; margin-top: 4px; }
+    .jobline { margin-top: 6px; font-size: 13px; color: #475569; }
+    .muted { color: #64748b; font-size: 13px; }
+
+    .detail { margin-top: 12px; border-top: 1px dashed #dde3ef; padding-top: 12px; cursor: default; }
+    .steps { display: flex; margin-bottom: 14px; }
+    .st { flex: 1; text-align: center; font-size: 12px; color: #94a3b8; }
+    .st .dot { width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; }
+    .st.on { color: #2563eb; }
+    .st.on .dot { background: #2563eb; }
+    .line { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; gap: 10px; }
+    .box { background: #f8fafc; border-radius: 10px; padding: 10px; font-size: 14px; margin-top: 10px; line-height: 1.6; }
+    .cancelled { background: #fee2e2; color: #b91c1c; border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 10px; }
+
+    /* กล่องสถานะช่าง */
+    .tech { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 14px; }
+    .trow { display: flex; gap: 10px; align-items: center; }
+    .trow .who { flex: 1; }
+    .tav { width: 42px; height: 42px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .jsteps { display: flex; gap: 4px; margin: 12px 0 6px; }
+    .js { flex: 1; height: 6px; border-radius: 3px; background: #fde3c3; }
+    .js.on { background: #e08a00; }
+    .tmsg { color: #9a3412; font-weight: 500; }
+
+    /* ชำระเงิน */
+    .pay { text-align: center; border: 1px solid #dde3ef; border-radius: 14px; padding: 14px; margin-top: 12px; }
+    .qrimg { display: block; width: 100%; max-width: 280px; margin: 0 auto 10px; border-radius: 12px; }
+    .amt { font-size: 26px; font-weight: 600; color: #dc2626; }
+    .pay small { color: #64748b; display: block; }
+    .copy { margin-top: 8px; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 6px 14px; font-family: inherit; cursor: pointer; }
+    .upload { display: block; margin-top: 14px; background: #eff4ff; color: #2563eb; border: 1px dashed #2563eb; border-radius: 10px; padding: 10px; cursor: pointer; }
+    .preview { max-width: 100%; max-height: 280px; border-radius: 10px; margin-top: 10px; }
+    .send { width: 100%; margin-top: 10px; background: #16a34a; color: white; border: none; border-radius: 10px; padding: 12px; font-family: inherit; font-size: 15px; cursor: pointer; }
+    .send:disabled { background: #94a3b8; }
+    .paid { background: #dcfce7; color: #166534; border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 14px; }
+
+    .empty { text-align: center; color: #64748b; padding: 40px 0; }
+    .empty div { font-size: 56px; }
+    .empty a { display: inline-block; margin-top: 12px; background: #2563eb; color: white; padding: 10px 18px; border-radius: 10px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header><a href="profile.html">←</a> 📦 คำสั่งซื้อของฉัน</header>
+    <main id="list"><p class="empty">กำลังโหลด...</p></main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole } from './guard.js';
+    import { renderNav } from './nav.js';
+    import { SHOP, STATUS, FLOW, JOB_FLOW, badge, jobBadge, fmtDate, PAYMENT, esc, compressImage } from './status.js';
+    import { collection, doc, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    renderNav('profile');
+    const $ = id => document.getElementById(id);
+
+    // ข้อความบอกลูกค้าในแต่ละขั้นของงานช่าง
+    const JOB_MSG = {
+      assigned: 'ร้านมอบหมายช่างแล้ว ช่างจะติดต่อนัดหมาย',
+      accepted: 'ช่างรับงานแล้ว',
+      onway:    'ช่างกำลังเดินทางไปหาคุณ 🚗',
+      working:  'ช่างกำลังติดตั้งอุปกรณ์ 🔧',
+      done:     'ติดตั้งเสร็จเรียบร้อย ✅'
+    };
+
+    let uid = null;
+    let orders = [];
+    const opened = new Set();
+    const slipData = {};
+
+    const openParam = new URLSearchParams(window.location.search).get('open');
+    if (openParam) opened.add(openParam);
+
+    // 1) ดึงเฉพาะออเดอร์ของตัวเอง
+    requireRole('customer', function (user) {
+      uid = user.uid;
+      const q = query(collection(db, 'orders'), where('uid', '==', user.uid));
+      onSnapshot(q, snap => {
+        orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        orders.sort((a, b) => (b.createdAt?.toMillis() ?? Date.now()) - (a.createdAt?.toMillis() ?? Date.now()));
+        render();
+      }, error => {
+        console.log(error.code);
+        $('list').innerHTML = '<p class="empty">โหลดคำสั่งซื้อไม่สำเร็จ: ' + error.code + '</p>';
+      });
+      document.body.style.visibility = 'visible';
+    });
+
+    const needPay = o => o.payment === 'transfer' && o.status === 'pending' && !o.slipAt;
+
+    // 2) วาดรายการ
+    function render() {
+      if (orders.length === 0) {
+        $('list').innerHTML = `
+          <div class="empty">
+            <div>📦</div>
+            <p>ยังไม่มีคำสั่งซื้อ</p>
+            <a href="products.html">ไปเลือกสินค้า</a>
+          </div>`;
+        return;
+      }
+
+      $('list').innerHTML = orders.map(o => {
+        const count = o.items.reduce((s, i) => s + i.qty, 0);
+        return `
+          <div class="order" data-id="${esc(o.id)}">
+            <div class="head">
+              <div>
+                <div class="no">${esc(o.id)}</div>
+                <div class="date">${fmtDate(o.createdAt)}</div>
+              </div>
+              ${badge(o.status)}
+            </div>
+            <div class="sum">
+              <span>${count} ชิ้น${o.install ? ' · มีบริการติดตั้ง' : ''}</span>
+              <b>฿${Number(o.total).toLocaleString()}</b>
+            </div>
+            ${needPay(o) ? '<div class="needpay">⏳ รอชำระเงิน — แตะเพื่อสแกนจ่าย</div>' : ''}
+            ${o.job && o.status !== 'cancelled' ? `<div class="jobline">🔧 ${esc(o.job.techName)} · ${jobBadge(o.job.status)}</div>` : ''}
+            ${opened.has(o.id) ? detail(o) : '<div class="more">แตะเพื่อดูรายละเอียด ▾</div>'}
+          </div>`;
+      }).join('');
+    }
+
+    // 3) รายละเอียด
+    function detail(o) {
+      const idx = FLOW.indexOf(o.status);
+
+      const steps = o.status === 'cancelled'
+        ? '<div class="cancelled">❌ คำสั่งซื้อนี้ถูกยกเลิก</div>'
+        : `<div class="steps">${FLOW.map((s, i) => `
+            <div class="st ${i <= idx ? 'on' : ''}">
+              <div class="dot">${i <= idx ? '✓' : i + 1}</div>${STATUS[s].label}
+            </div>`).join('')}</div>`;
+
+      const items = o.items.map(i => `
+        <div class="line"><span>${esc(i.name)} × ${i.qty}</span><span>฿${(i.price * i.qty).toLocaleString()}</span></div>
+      `).join('');
+
+      return `
+        <div class="detail">
+          ${steps}
+          ${techBox(o)}
+          <div style="margin-top:12px">${items}</div>
+          <div class="line"><span>ค่าจัดส่ง</span><span>${o.shipFee ? '฿' + o.shipFee : 'ฟรี'}</span></div>
+          ${o.install ? `<div class="line"><span>ค่าติดตั้ง</span><span>฿${o.installFee}</span></div>` : ''}
+          <div class="line"><b>ยอดชำระ</b><b>฿${Number(o.total).toLocaleString()}</b></div>
+          <div class="box">📍 ${esc(o.shipping.name)} · ${esc(o.shipping.phone)}<br>${esc(o.shipping.address)}</div>
+          <div class="box">${PAYMENT[o.payment] || ''}</div>
+          ${payBox(o)}
+        </div>`;
+    }
+
+    // 4) กล่องสถานะช่าง
+    function techBox(o) {
+      if (!o.install || o.status === 'cancelled') return '';
+      const j = o.job;
+
+      if (!j) {
+        return `
+          <div class="tech">
+            <b>🔧 บริการติดตั้ง</b> · นัด ${esc(o.installDate)}<br>
+            <span class="muted">รอร้านมอบหมายช่าง</span>
+          </div>`;
+      }
+
+      const idx = JOB_FLOW.indexOf(j.status);
+      return `
+        <div class="tech">
+          <div class="trow">
+            <div class="tav">👷</div>
+            <div class="who">
+              <b>${esc(j.techName)}</b>
+              <div class="muted">ช่างผู้รับผิดชอบ · นัด ${esc(o.installDate)}</div>
+            </div>
+            ${jobBadge(j.status)}
+          </div>
+          <div class="jsteps">${JOB_FLOW.map((k, i) => `<div class="js ${i <= idx ? 'on' : ''}"></div>`).join('')}</div>
+          <div class="tmsg">${JOB_MSG[j.status] || ''}</div>
+          ${j.status === 'done' && j.note ? `<div class="muted" style="margin-top:6px">📝 ${esc(j.note)}</div>` : ''}
+        </div>`;
+    }
+
+    // 5) กล่องชำระเงิน
+    function payBox(o) {
+      if (o.payment !== 'transfer' || o.status === 'cancelled') return '';
+      if (o.slipAt) return `<div class="paid">✅ แนบสลิปแล้ว (${fmtDate(o.slipAt)}) · รอร้านตรวจสอบ</div>`;
+      if (o.status !== 'pending') return '';
+
+      const amount = Number(o.total).toFixed(2);
+      const preview = slipData[o.id] ? `<img class="preview" src="${slipData[o.id]}" alt="สลิป">` : '';
+      return `
+        <div class="pay">
+          <img class="qrimg" src="${SHOP.qrImage}" alt="QR ชำระเงิน">
+          <small>สแกนแล้ว กรอกยอดเงินตามนี้ในแอปธนาคาร</small>
+          <div class="amt">฿${Number(o.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+          <button class="copy" data-copy="${amount}">📋 คัดลอกยอดเงิน</button>
+          <label class="upload">📎 ${slipData[o.id] ? 'เปลี่ยนรูปสลิป' : 'แนบสลิปโอนเงิน'}
+            <input type="file" accept="image/*" data-slip="${esc(o.id)}" hidden>
+          </label>
+          ${preview}
+          ${slipData[o.id] ? `<button class="send" data-send="${esc(o.id)}">ส่งสลิปให้ร้าน</button>` : ''}
+        </div>`;
+    }
+
+    // 6) เลือกรูปสลิป
+    $('list').addEventListener('change', async e => {
+      const input = e.target.closest('input[data-slip]');
+      if (!input || !input.files[0]) return;
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) {
+        alert('กรุณาเลือกไฟล์รูปภาพ');
+        return;
+      }
+      try {
+        slipData[input.dataset.slip] = await compressImage(file);
+        render();
+      } catch {
+        alert('อ่านไฟล์รูปไม่สำเร็จ ลองรูปอื่น');
+      }
+    });
+
+    // 7) คลิก: คัดลอกยอด / ส่งสลิป / เปิด-ปิดการ์ด
+    $('list').addEventListener('click', async e => {
+      const copy = e.target.closest('[data-copy]');
+      if (copy) {
+        try {
+          await navigator.clipboard.writeText(copy.dataset.copy);
+          copy.textContent = '✅ คัดลอกแล้ว';
+        } catch {
+          alert('ยอดเงิน: ' + copy.dataset.copy);
+        }
+        return;
+      }
+
+      const send = e.target.closest('[data-send]');
+      if (send) {
+        const id = send.dataset.send;
+        send.disabled = true;
+        send.textContent = 'กำลังส่ง...';
+        try {
+          const batch = writeBatch(db);
+          batch.set(doc(db, 'slips', id), { uid, image: slipData[id], createdAt: serverTimestamp() });
+          batch.update(doc(db, 'orders', id), { slipAt: serverTimestamp() });
+          await batch.commit();
+          delete slipData[id];
+        } catch (error) {
+          console.log(error.code);
+          alert('ส่งสลิปไม่สำเร็จ: ' + error.code);
+          send.disabled = false;
+          send.textContent = 'ส่งสลิปให้ร้าน';
+        }
+        return;
+      }
+
+      const card = e.target.closest('.order');
+      if (!card || e.target.closest('.detail')) return;
+      const id = card.dataset.id;
+      opened.has(id) ? opened.delete(id) : opened.add(id);
+      render();
+    });
+  </script>
+</body>
+</html>

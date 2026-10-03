@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โปรไฟล์ | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #2563eb; color: white; padding: 28px 20px; text-align: center; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; background: white; font-size: 36px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+    header b { font-size: 20px; display: block; }
+    header small { opacity: .85; }
+    main { padding: 20px; }
+    .card { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .card h3 { margin: 0 0 12px; }
+    .menu { display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #0f172a; font-size: 16px; }
+    .menu span:last-child { color: #94a3b8; }
+    label { display: block; font-size: 14px; color: #475569; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 12px; border: 1px solid #dde3ef; border-radius: 10px; font-size: 16px; font-family: inherit; margin-bottom: 12px; }
+    .save { width: 100%; background: #2563eb; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 16px; font-family: inherit; cursor: pointer; }
+    .logout { width: 100%; background: white; color: #dc2626; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; font-size: 16px; font-family: inherit; cursor: pointer; }
+    .msg { text-align: center; min-height: 20px; margin: 8px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="avatar">👤</div>
+      <b id="displayName">ลูกค้า</b>
+      <small id="email"></small>
+    </header>
+
+    <main>
+      <a class="card menu" href="orders.html">
+        <span>📦 คำสั่งซื้อของฉัน</span><span>›</span>
+      </a>
+
+      <div class="card">
+        <h3>ข้อมูลส่วนตัว</h3>
+        <form id="profileForm">
+          <label>ชื่อ-นามสกุล</label>
+          <input id="name" placeholder="เช่น สมชาย ใจดี">
+
+          <label>เบอร์โทรศัพท์</label>
+          <input id="phone" type="tel" placeholder="08x-xxx-xxxx">
+
+          <label>ที่อยู่สำหรับจัดส่งและติดตั้ง</label>
+          <textarea id="address" rows="3" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด"></textarea>
+
+          <button type="submit" class="save">บันทึกข้อมูล</button>
+          <p class="msg" id="msg"></p>
+        </form>
+      </div>
+
+      <button class="logout" id="logoutBtn">ออกจากระบบ</button>
+    </main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole, logout } from './guard.js';
+    import { renderNav } from './nav.js';
+    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    renderNav('profile');
+    let uid = null;
+
+    // 1) ต้องเป็นลูกค้าที่ล็อกอินแล้วเท่านั้น
+    requireRole('customer', async function (user) {
+      uid = user.uid;
+      document.getElementById('email').textContent = user.email;
+
+      // 2) โหลดโปรไฟล์เดิม
+      const snap = await getDoc(doc(db, 'profiles', uid));
+      if (snap.exists()) {
+        const p = snap.data();
+        document.getElementById('name').value = p.name || '';
+        document.getElementById('phone').value = p.phone || '';
+        document.getElementById('address').value = p.address || '';
+        if (p.name) document.getElementById('displayName').textContent = p.name;
+      }
+
+      document.body.style.visibility = 'visible';
+    });
+
+    // 3) กดบันทึก → เขียนลง profiles/{uid}
+    document.getElementById('profileForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      const data = {
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, 'profiles', uid), data, { merge: true });
+        msg.style.color = '#16a34a';
+        msg.textContent = '✅ บันทึกข้อมูลแล้ว';
+        if (data.name) document.getElementById('displayName').textContent = data.name;
+      } catch (error) {
+        console.log(error.code);
+        msg.style.color = '#dc2626';
+        msg.textContent = '❌ บันทึกไม่สำเร็จ: ' + error.code;
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+  </script>
+</body>
+</html>

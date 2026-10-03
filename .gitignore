@@ -1,0 +1,12 @@
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Node
+node_modules/
+
+# ระบบ
+.DS_Store
+Thumbs.db
+.vscode/

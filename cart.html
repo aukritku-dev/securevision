@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตะกร้า | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #2563eb; color: white; padding: 18px 20px; font-size: 20px; font-weight: 600; }
+    main { padding: 16px; }
+
+    .item { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px; display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+    .pic { width: 68px; height: 68px; background: #f1f4f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; overflow: hidden; }
+    .info { flex: 1; }
+    .name { font-size: 14px; }
+    .price { color: #dc2626; font-weight: 600; }
+    .qty { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .qty button { width: 30px; height: 30px; border: 1px solid #dde3ef; background: white; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .del { background: none; border: none; font-size: 20px; cursor: pointer; }
+
+    .summary { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 16px; margin-top: 6px; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #475569; }
+    .row.total { color: #0f172a; font-weight: 600; font-size: 18px; border-top: 1px dashed #dde3ef; padding-top: 10px; }
+    .row.total span:last-child { color: #dc2626; }
+    .hint { font-size: 13px; color: #16a34a; margin: 0 0 10px; }
+    .checkout { width: 100%; background: #2563eb; color: white; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-family: inherit; cursor: pointer; margin-top: 8px; }
+
+    .empty { text-align: center; color: #64748b; padding: 40px 0; }
+    .empty div { font-size: 56px; }
+    .empty a { display: inline-block; margin-top: 12px; background: #2563eb; color: white; padding: 10px 18px; border-radius: 10px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>🛒 ตะกร้าสินค้า</header>
+    <main>
+      <div id="list"></div>
+
+      <div class="summary" id="summary" style="display: none;">
+        <p class="hint" id="hint"></p>
+        <div class="row"><span>รวมค่าสินค้า</span><span id="subtotal"></span></div>
+        <div class="row"><span>ค่าจัดส่ง</span><span id="ship"></span></div>
+        <div class="row total"><span>ยอดชำระ</span><span id="total"></span></div>
+        <button class="checkout" id="checkoutBtn">ดำเนินการสั่งซื้อ →</button>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole } from './guard.js';
+    import { renderNav } from './nav.js';
+    import { esc, productPic } from './status.js';
+    import { collection, doc, onSnapshot, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    renderNav('cart');
+
+    const SHIP_FEE = 50;
+    const FREE_SHIP_MIN = 1000;
+
+    let products = {};
+    let items = {};
+    let cartRef = null;
+
+    // 1) ต้องเป็นลูกค้าที่ล็อกอินแล้ว
+    requireRole('customer', function (user) {
+      cartRef = doc(db, 'carts', user.uid);
+
+      onSnapshot(collection(db, 'products'), snap => {
+        products = {};
+        snap.docs.forEach(d => { products[d.id] = d.data(); });
+        render();
+      });
+
+      onSnapshot(cartRef, snap => {
+        items = snap.exists() ? (snap.data().items || {}) : {};
+        render();
+      });
+
+      document.body.style.visibility = 'visible';
+    });
+
+    // 2) วาดรายการ + สรุปยอด
+    function render() {
+      const list = document.getElementById('list');
+      const summary = document.getElementById('summary');
+      const ids = Object.keys(items).filter(id => items[id] > 0 && products[id]);
+
+      if (ids.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            <div>🛒</div>
+            <p>ยังไม่มีสินค้าในตะกร้า</p>
+            <a href="products.html">ไปเลือกสินค้า</a>
+          </div>`;
+        summary.style.display = 'none';
+        return;
+      }
+
+      let subtotal = 0;
+      list.innerHTML = ids.map(id => {
+        const p = products[id];
+        const qty = items[id];
+        subtotal += p.price * qty;
+        return `
+          <div class="item">
+            <div class="pic">${productPic(p)}</div>
+            <div class="info">
+              <div class="name">${esc(p.name)}</div>
+              <div class="price">฿${p.price.toLocaleString()}</div>
+              <div class="qty">
+                <button data-act="minus" data-id="${esc(id)}">−</button>
+                <span>${qty}</span>
+                <button data-act="plus" data-id="${esc(id)}">+</button>
+              </div>
+            </div>
+            <button class="del" data-act="del" data-id="${esc(id)}" title="ลบ">🗑️</button>
+          </div>`;
+      }).join('');
+
+      const ship = subtotal >= FREE_SHIP_MIN ? 0 : SHIP_FEE;
+      document.getElementById('subtotal').textContent = '฿' + subtotal.toLocaleString();
+      document.getElementById('ship').textContent = ship === 0 ? 'ฟรี' : '฿' + ship;
+      document.getElementById('total').textContent = '฿' + (subtotal + ship).toLocaleString();
+      document.getElementById('hint').textContent = ship === 0
+        ? '🎉 ได้รับสิทธิ์ส่งฟรี'
+        : 'ซื้อเพิ่มอีก ฿' + (FREE_SHIP_MIN - subtotal).toLocaleString() + ' เพื่อรับสิทธิ์ส่งฟรี';
+      summary.style.display = 'block';
+    }
+
+    // 3) กด + / − / ลบ
+    document.getElementById('list').addEventListener('click', async e => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const qty = items[id] || 0;
+      const field = 'items.' + id;
+
+      try {
+        if (btn.dataset.act === 'plus') {
+          await updateDoc(cartRef, { [field]: qty + 1 });
+        } else if (btn.dataset.act === 'minus' && qty > 1) {
+          await updateDoc(cartRef, { [field]: qty - 1 });
+        } else {
+          await updateDoc(cartRef, { [field]: deleteField() });
+        }
+      } catch (error) {
+        console.log(error.code);
+        alert('อัปเดตตะกร้าไม่สำเร็จ: ' + error.code);
+      }
+    });
+
+    // 4) ไปหน้า checkout
+    document.getElementById('checkoutBtn').addEventListener('click', () => {
+      window.location.href = 'checkout.html';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ช่างเทคนิค | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #e08a00; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header b { font-size: 20px; display: block; }
+    header small { opacity: .9; }
+    header button { background: rgba(255,255,255,.2); color: white; border: none; border-radius: 10px; padding: 8px 12px; font-family: inherit; cursor: pointer; }
+    main { padding: 16px; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px 6px; text-align: center; }
+    .stat b { display: block; font-size: 24px; }
+    .stat small { color: #64748b; font-size: 12px; }
+
+    .chips { display: flex; gap: 8px; margin-bottom: 12px; }
+    .chip { flex: 1; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 8px 4px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .chip.active { background: #e08a00; color: white; border-color: #e08a00; }
+
+    .job { background: white; border: 1px solid #e5e9f2; border-left: 4px solid #e08a00; border-radius: 14px; padding: 14px; margin-bottom: 12px; cursor: pointer; }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .no { font-weight: 600; }
+    .today { background: #dc2626; color: white; font-size: 11px; padding: 1px 8px; border-radius: 999px; margin-left: 4px; }
+    .sub { font-size: 13px; color: #64748b; }
+    .more { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+    .detail { margin-top: 12px; border-top: 1px dashed #dde3ef; padding-top: 12px; cursor: default; }
+    .steps { display: flex; margin-bottom: 12px; }
+    .st { flex: 1; text-align: center; font-size: 11px; color: #94a3b8; }
+    .st .dot { width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+    .st.on { color: #e08a00; }
+    .st.on .dot { background: #e08a00; }
+    .box { background: #f8fafc; border-radius: 10px; padding: 10px; font-size: 14px; margin-top: 10px; line-height: 1.8; }
+    .box a { color: #2563eb; text-decoration: none; }
+    .warn { background: #fee2e2; color: #b91c1c; border-radius: 10px; padding: 10px; font-size: 14px; margin-top: 10px; }
+    .act { width: 100%; margin-top: 12px; background: #e08a00; color: white; border: none; border-radius: 12px; padding: 13px; font-size: 16px; font-family: inherit; cursor: pointer; }
+    .act.finish { background: #16a34a; }
+    .act:disabled { background: #94a3b8; }
+    .sigimg { display: block; width: 100%; max-width: 320px; margin: 10px auto 0; border: 1px solid #e5e9f2; border-radius: 10px; }
+    .empty { text-align: center; color: #64748b; padding: 40px 0; }
+
+    /* โปรไฟล์ช่าง */
+    .profile { background: white; border: 1px solid #e5e9f2; border-radius: 16px; overflow: hidden; }
+    .pcover { background: linear-gradient(120deg, #e08a00, #f59e0b); padding: 24px 16px 18px; text-align: center; color: white; }
+    .avatar { width: 76px; height: 76px; border-radius: 50%; background: white; font-size: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
+    .pname { font-size: 20px; font-weight: 600; }
+    .code { display: inline-block; margin-top: 6px; background: rgba(0,0,0,.18); padding: 3px 14px; border-radius: 999px; letter-spacing: 1px; font-weight: 600; }
+    .info { padding: 6px 16px; }
+    .info .row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+    .info .row:last-child { border-bottom: none; }
+    .info .row span { color: #64748b; }
+    .info .row b { font-weight: 500; text-align: right; }
+    .perf { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+    .perf div { background: #fff7ed; border-radius: 12px; padding: 12px; text-align: center; }
+    .perf b { display: block; font-size: 22px; color: #c2410c; }
+    .perf small { color: #64748b; }
+    .lock { background: #f1f5f9; color: #475569; font-size: 13px; text-align: center; padding: 10px; }
+
+    /* หน้าต่างปิดงาน */
+    .modal { position: fixed; inset: 0; background: rgba(15,23,42,.6); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
+    .modal.show { display: flex; }
+    .sheet { background: white; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 18px; }
+    .sheet label { display: block; font-size: 14px; color: #475569; margin: 10px 0 4px; }
+    .sheet textarea { width: 100%; padding: 10px; border: 1px solid #dde3ef; border-radius: 10px; font-family: inherit; font-size: 15px; }
+    #sig { display: block; width: 100%; height: 180px; border: 2px dashed #94a3b8; border-radius: 10px; touch-action: none; background: white; }
+    .row-btn { display: flex; gap: 8px; margin-top: 8px; }
+    .row-btn button { flex: 1; background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 9px; font-family: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div><b>🔧 งานติดตั้งของฉัน</b><small id="who"></small></div>
+      <button id="logoutBtn">ออกจากระบบ</button>
+    </header>
+    <main>
+      <div class="stats" id="stats"></div>
+      <div class="chips" id="chips"></div>
+      <div id="list"><p class="empty">กำลังโหลด...</p></div>
+    </main>
+  </div>
+
+  <!-- หน้าต่างปิดงาน -->
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h3 style="margin:0">✅ ปิดงานติดตั้ง</h3>
+      <div class="sub" id="modalOrder"></div>
+
+      <label>บันทึกการติดตั้ง</label>
+      <textarea id="note" rows="3" placeholder="เช่น ติดกล้อง 4 จุด หน้าบ้าน/หลังบ้าน ตั้งค่าดูผ่านมือถือลูกค้าแล้ว"></textarea>
+
+      <label>ลายเซ็นลูกค้า (เซ็นในกรอบ)</label>
+      <canvas id="sig"></canvas>
+      <div class="row-btn">
+        <button id="clearSig">ล้างลายเซ็น</button>
+        <button id="closeModal">ยกเลิก</button>
+      </div>
+
+      <button class="act finish" id="finishBtn">ยืนยันปิดงาน</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole, logout } from './guard.js';
+    import { JOB, JOB_FLOW, nextJob, jobBadge, todayStr, esc } from './status.js';
+    import { collection, doc, query, where, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+
+    const JOB_ACTION = {
+      accepted: '✋ รับงาน',
+      onway:    '🚗 เริ่มเดินทาง',
+      working:  '🔧 ถึงหน้างาน เริ่มติดตั้ง',
+      done:     '✅ ติดตั้งเสร็จ ปิดงาน'
+    };
+
+    let jobs = [];
+    let staff = null;         // ข้อมูลช่างจาก staff/{uid} (อ่านอย่างเดียว)
+    let email = '';
+    let tab = 'todo';
+    let closingId = null;
+    const opened = new Set();
+
+    // 1) ตรวจสิทธิ์ช่าง → ดึงงานของตัวเอง + ข้อมูลโปรไฟล์
+    requireRole('tech', function (user) {
+      email = user.email;
+      $('who').textContent = user.email;
+
+      const q = query(collection(db, 'orders'), where('techUid', '==', user.uid));
+      onSnapshot(q, snap => {
+        jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        jobs.sort((a, b) => String(a.installDate).localeCompare(String(b.installDate)));
+        render();
+      }, error => {
+        console.log(error.code);
+        $('list').innerHTML = '<p class="empty">โหลดงานไม่สำเร็จ: ' + error.code + '</p>';
+      });
+
+      // ข้อมูลช่าง: ฟังสด ถ้าแอดมินแก้ใน Console หน้านี้จะอัปเดตเอง
+      onSnapshot(doc(db, 'staff', user.uid), snap => {
+        staff = snap.exists() ? snap.data() : null;
+        $('who').textContent = staff?.code ? `รหัสช่าง ${staff.code} · ${staff.name}` : user.email;
+        render();
+      });
+
+      document.body.style.visibility = 'visible';
+    });
+
+    // 2) วาดทั้งหน้า
+    function render() {
+      const today = todayStr();
+      const todo = jobs.filter(o => o.job?.status !== 'done' && o.status !== 'cancelled');
+      const done = jobs.filter(o => o.job?.status === 'done');
+
+      $('stats').innerHTML = `
+        <div class="stat"><b style="color:#dc2626">${todo.filter(o => o.installDate === today).length}</b><small>นัดวันนี้</small></div>
+        <div class="stat"><b style="color:#e08a00">${todo.length}</b><small>งานค้าง</small></div>
+        <div class="stat"><b style="color:#15803d">${done.length}</b><small>เสร็จแล้ว</small></div>`;
+
+      $('chips').innerHTML = `
+        <button class="chip ${tab === 'todo' ? 'active' : ''}" data-tab="todo">งานที่ต้องทำ (${todo.length})</button>
+        <button class="chip ${tab === 'done' ? 'active' : ''}" data-tab="done">เสร็จแล้ว (${done.length})</button>
+        <button class="chip ${tab === 'profile' ? 'active' : ''}" data-tab="profile">👤 โปรไฟล์</button>`;
+
+      if (tab === 'profile') {
+        $('list').innerHTML = profileView(done);
+        return;
+      }
+
+      const list = tab === 'todo' ? todo : done;
+      if (list.length === 0) {
+        $('list').innerHTML = `<p class="empty">${tab === 'todo' ? '🎉 ไม่มีงานค้าง' : 'ยังไม่มีงานที่เสร็จ'}</p>`;
+        return;
+      }
+
+      $('list').innerHTML = list.map(o => `
+        <div class="job" data-id="${esc(o.id)}">
+          <div class="head">
+            <div>
+              <div class="no">📅 ${esc(o.installDate || '-')}${o.installDate === today ? '<span class="today">วันนี้</span>' : ''}</div>
+              <div class="sub">${esc(o.id)} · ${esc(o.shipping?.name)}</div>
+            </div>
+            ${jobBadge(o.job?.status)}
+          </div>
+          ${opened.has(o.id) ? detail(o) : '<div class="more">แตะเพื่อดูรายละเอียด ▾</div>'}
+        </div>`).join('');
+    }
+
+    // 3) หน้าโปรไฟล์ช่าง (อ่านอย่างเดียว)
+    function profileView(done) {
+      if (!staff) {
+        return `<p class="empty">ไม่พบข้อมูลช่างในระบบ<br><small>แจ้งผู้ดูแลระบบให้เพิ่มข้อมูลในคอลเลกชัน staff</small></p>`;
+      }
+
+      // นับงานที่เสร็จในเดือนนี้
+      const now = new Date();
+      const thisMonth = done.filter(o => {
+        const d = o.job?.doneAt?.toDate?.();
+        return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+
+      return `
+        <div class="profile">
+          <div class="pcover">
+            <div class="avatar">👷</div>
+            <div class="pname">${esc(staff.name)}</div>
+            <div class="code">${esc(staff.code || 'ยังไม่มีรหัส')}</div>
+          </div>
+          <div class="info">
+            <div class="row"><span>รหัสช่าง</span><b>${esc(staff.code || '-')}</b></div>
+            <div class="row"><span>ตำแหน่ง</span><b>ช่างเทคนิค</b></div>
+            <div class="row"><span>พื้นที่รับผิดชอบ</span><b>${esc(staff.zone || '-')}</b></div>
+            <div class="row"><span>เบอร์โทร</span><b>${esc(staff.phone || '-')}</b></div>
+            <div class="row"><span>อีเมล</span><b>${esc(email)}</b></div>
+            <div class="row"><span>วันที่เริ่มงาน</span><b>${esc(staff.startDate || '-')}</b></div>
+          </div>
+          <div class="perf">
+            <div><b>${done.length}</b><small>งานเสร็จทั้งหมด</small></div>
+            <div><b>${thisMonth}</b><small>งานเสร็จเดือนนี้</small></div>
+          </div>
+          <div class="lock">🔒 ข้อมูลนี้แก้ไขได้โดยผู้ดูแลระบบเท่านั้น</div>
+        </div>`;
+    }
+
+    // 4) รายละเอียดงาน
+    function detail(o) {
+      const s = o.job?.status;
+      const idx = JOB_FLOW.indexOf(s);
+
+      const steps = `<div class="steps">${JOB_FLOW.map((k, i) => `
+        <div class="st ${i <= idx ? 'on' : ''}">
+          <div class="dot">${i <= idx ? '✓' : i + 1}</div>${JOB[k].label}
+        </div>`).join('')}</div>`;
+
+      const items = o.items.map(i => `• ${esc(i.name)} × ${i.qty}`).join('<br>');
+      const phone = esc(o.shipping?.phone);
+      const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(o.shipping?.address || '');
+
+      let action = '';
+      if (o.status === 'cancelled') {
+        action = '<div class="warn">❌ คำสั่งซื้อนี้ถูกยกเลิกแล้ว ไม่ต้องเข้างาน</div>';
+      } else {
+        const next = nextJob(s);
+        if (next) action = `<button class="act ${next === 'done' ? 'finish' : ''}" data-next="${next}" data-id="${esc(o.id)}">${JOB_ACTION[next]}</button>`;
+      }
+
+      const result = s === 'done' ? `
+        <div class="box">📝 ${esc(o.job.note || '-')}</div>
+        ${String(o.job.signature || '').startsWith('data:image/') ? `<img class="sigimg" src="${esc(o.job.signature)}" alt="ลายเซ็นลูกค้า">` : ''}` : '';
+
+      return `
+        <div class="detail">
+          ${steps}
+          <div class="box">
+            👤 ${esc(o.shipping?.name)}<br>
+            📞 <a href="tel:${phone}">${phone}</a> (แตะเพื่อโทร)<br>
+            📍 ${esc(o.shipping?.address)}<br>
+            🗺️ <a href="${map}" target="_blank" rel="noopener">เปิดใน Google Maps</a>
+          </div>
+          <div class="box"><b>📦 อุปกรณ์ที่ต้องติดตั้ง</b><br>${items}</div>
+          ${result}
+          ${action}
+        </div>`;
+    }
+
+    // 5) แท็บ
+    $('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      tab = btn.dataset.tab;
+      render();
+    });
+
+    // 6) คลิกในรายการ
+    $('list').addEventListener('click', async e => {
+      const btn = e.target.closest('button[data-next]');
+      if (btn) {
+        const id = btn.dataset.id;
+        const next = btn.dataset.next;
+
+        if (next === 'done') {
+          openModal(id);
+          return;
+        }
+
+        btn.disabled = true;
+        try {
+          await updateDoc(doc(db, 'orders', id), {
+            'job.status': next,
+            ['job.' + next + 'At']: serverTimestamp()
+          });
+        } catch (error) {
+          console.log(error.code);
+          alert('อัปเดตไม่สำเร็จ: ' + error.code);
+          btn.disabled = false;
+        }
+        return;
+      }
+
+      if (e.target.closest('.detail')) return;
+      const card = e.target.closest('.job');
+      if (!card) return;
+      const id = card.dataset.id;
+      opened.has(id) ? opened.delete(id) : opened.add(id);
+      render();
+    });
+
+    // ---------- 7) แผ่นเซ็นชื่อ ----------
+    const canvas = $('sig');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let hasInk = false;
+
+    function resetCanvas() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width;
+      canvas.height = r.height;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#0f172a';
+      hasInk = false;
+    }
+
+    canvas.addEventListener('pointerdown', e => {
+      drawing = true;
+      canvas.setPointerCapture(e.pointerId);
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!drawing) return;
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      hasInk = true;
+    });
+    canvas.addEventListener('pointerup', () => { drawing = false; });
+
+    $('clearSig').addEventListener('click', resetCanvas);
+
+    function openModal(id) {
+      closingId = id;
+      $('modalOrder').textContent = 'คำสั่งซื้อ ' + id;
+      $('note').value = '';
+      $('modal').classList.add('show');
+      resetCanvas();
+    }
+    function closeModal() {
+      $('modal').classList.remove('show');
+      closingId = null;
+    }
+    $('closeModal').addEventListener('click', closeModal);
+
+    // 8) ยืนยันปิดงาน
+    $('finishBtn').addEventListener('click', async () => {
+      if (!hasInk) {
+        alert('กรุณาให้ลูกค้าเซ็นชื่อก่อนปิดงาน');
+        return;
+      }
+      const btn = $('finishBtn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังบันทึก...';
+      try {
+        await updateDoc(doc(db, 'orders', closingId), {
+          'job.status': 'done',
+          'job.note': $('note').value.trim(),
+          'job.signature': canvas.toDataURL('image/jpeg', 0.6),
+          'job.doneAt': serverTimestamp()
+        });
+        closeModal();
+      } catch (error) {
+        console.log(error.code);
+        alert('ปิดงานไม่สำเร็จ: ' + error.code);
+      }
+      btn.disabled = false;
+      btn.textContent = 'ยืนยันปิดงาน';
+    });
+
+    $('logoutBtn').addEventListener('click', logout);
+  </script>
+</body>
+</html>

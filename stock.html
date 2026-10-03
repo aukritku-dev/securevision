@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สต็อกสินค้า | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 720px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #0f2350; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header b { font-size: 20px; display: block; }
+    header small { opacity: .75; }
+    header a { color: white; text-decoration: none; background: rgba(255,255,255,.15); border-radius: 10px; padding: 8px 12px; }
+    main { padding: 16px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px 6px; text-align: center; }
+    .stat b { display: block; font-size: 20px; }
+    .stat small { color: #64748b; font-size: 12px; }
+
+    .chips { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
+    .chip { flex-shrink: 0; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 6px 14px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .chip.active { background: #0f2350; color: white; border-color: #0f2350; }
+
+    .prod { background: white; border: 1px solid #e5e9f2; border-left: 4px solid #22c55e; border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .prod.low { border-left-color: #f59e0b; }
+    .prod.out { border-left-color: #dc2626; }
+    .ptop { display: flex; gap: 12px; align-items: center; }
+    .pic { width: 56px; height: 56px; background: #f1f4f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; overflow: hidden; }
+    .pinfo { flex: 1; }
+    .pname { font-size: 15px; }
+    .sub { font-size: 13px; color: #64748b; }
+    .qty { text-align: right; }
+    .qty b { font-size: 28px; display: block; line-height: 1.1; }
+    .qty small { color: #64748b; font-size: 12px; }
+
+    .bar { position: relative; height: 10px; background: #e2e8f0; border-radius: 5px; margin: 14px 0 4px; }
+    .bar .fill { height: 100%; border-radius: 5px; }
+    .bar .rop { position: absolute; top: -4px; width: 3px; height: 18px; background: #0f172a; border-radius: 2px; }
+    .legend { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; }
+    .alert { background: #fef3c7; color: #92400e; border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-top: 10px; }
+    .alert.out { background: #fee2e2; color: #b91c1c; }
+    .btns { display: flex; gap: 8px; margin-top: 12px; }
+    .btns button { flex: 1; padding: 10px; border-radius: 10px; font-family: inherit; font-size: 14px; cursor: pointer; border: 1px solid #dde3ef; background: white; }
+    .btns .primary { background: #2563eb; color: white; border: none; }
+    .empty { text-align: center; color: #64748b; padding: 30px 0; }
+
+    h3 { margin: 26px 0 10px; }
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; font-size: 13px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; color: #475569; font-weight: 500; }
+    td.plus { color: #15803d; font-weight: 600; }
+    td.minus { color: #dc2626; font-weight: 600; }
+
+    .tools { margin-top: 28px; border-top: 1px solid #e5e9f2; padding-top: 16px; color: #64748b; font-size: 14px; }
+    .tools button { background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 8px 14px; font-family: inherit; cursor: pointer; }
+
+    .modal { position: fixed; inset: 0; background: rgba(15,23,42,.6); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
+    .modal.show { display: flex; }
+    .sheet { background: white; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 18px; }
+    .sheet label { display: block; font-size: 13px; color: #475569; margin: 10px 0 4px; }
+    .sheet input { width: 100%; padding: 10px; border: 1px solid #dde3ef; border-radius: 10px; font-family: inherit; font-size: 15px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+    .formula { background: #f8fafc; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 12px; line-height: 1.8; color: #334155; }
+    .result { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .result div { background: #eff4ff; border-radius: 12px; padding: 10px; text-align: center; }
+    .result small { color: #1d4ed8; }
+    .result input { text-align: center; font-size: 22px; font-weight: 600; border: none; background: transparent; padding: 4px; }
+    .row-btn { display: flex; gap: 8px; margin-top: 10px; }
+    .row-btn button { flex: 1; background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 9px; font-family: inherit; cursor: pointer; }
+    .save { width: 100%; margin-top: 10px; background: #2563eb; color: white; border: none; border-radius: 12px; padding: 13px; font-size: 16px; font-family: inherit; cursor: pointer; }
+    .save:disabled { background: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div><b>📦 สต็อกสินค้า</b><small>ROP · EOQ · ความเคลื่อนไหวคลังสินค้า</small></div>
+      <a href="admin.html">← คำสั่งซื้อ</a>
+    </header>
+
+    <main>
+      <div class="stats" id="stats"></div>
+      <div class="chips" id="chips"></div>
+      <div id="list"><p class="empty">กำลังโหลด...</p></div>
+
+      <h3>🧾 ความเคลื่อนไหวล่าสุด</h3>
+      <div class="tablewrap" id="moves"><p class="empty">ยังไม่มีรายการ</p></div>
+
+      <div class="tools">
+        🛠 เครื่องมือ
+        <p><button id="sampleBtn">📋 ตั้งค่าสต็อกตัวอย่าง (P01–P07)</button> <span id="sampleStatus"></span></p>
+      </div>
+    </main>
+  </div>
+
+  <!-- รับสินค้าเข้า -->
+  <div class="modal" id="recvModal">
+    <div class="sheet">
+      <h3 style="margin:0">📥 รับสินค้าเข้าคลัง</h3>
+      <div class="sub" id="recvName"></div>
+      <label>จำนวนที่รับเข้า (ชิ้น)</label>
+      <input type="number" id="recvQty" min="1">
+      <label>อ้างอิง (เลขใบสั่งซื้อ / ผู้ขาย)</label>
+      <input type="text" id="recvRef" placeholder="เช่น PO-2026-001">
+      <div class="row-btn"><button id="recvCancel">ยกเลิก</button></div>
+      <button class="save" id="recvSave">บันทึกรับเข้า</button>
+    </div>
+  </div>
+
+  <!-- คำนวณ EOQ / ROP -->
+  <div class="modal" id="calcModal">
+    <div class="sheet">
+      <h3 style="margin:0">🧮 คำนวณ EOQ / ROP</h3>
+      <div class="sub" id="calcName"></div>
+
+      <div class="grid2" id="calcInputs">
+        <div><label>D: ความต้องการต่อปี (ชิ้น)</label><input type="number" id="cD"></div>
+        <div><label>S: ค่าสั่งซื้อต่อครั้ง (บาท)</label><input type="number" id="cS"></div>
+        <div><label>H: ค่าเก็บรักษา/ชิ้น/ปี (บาท)</label><input type="number" id="cH"></div>
+        <div><label>L: ระยะเวลารอสินค้า (วัน)</label><input type="number" id="cL"></div>
+        <div><label>SS: สต็อกเผื่อ (ชิ้น)</label><input type="number" id="cSS"></div>
+        <div><label>วันทำการต่อปี</label><input type="number" id="cDays" value="365"></div>
+      </div>
+
+      <div class="formula" id="formula">กรอก D, S, H, L เพื่อคำนวณ</div>
+
+      <div class="result">
+        <div><small>EOQ · สั่งครั้งละ (ชิ้น)</small><input type="number" id="rEOQ"></div>
+        <div><small>ROP · จุดสั่งซื้อ (ชิ้น)</small><input type="number" id="rROP"></div>
+      </div>
+      <div class="sub" style="margin-top:6px">แก้ตัวเลขผลลัพธ์เองได้ ถ้าต้องการปัดเศษให้ตรงกับรายงานของกลุ่ม</div>
+
+      <div class="row-btn"><button id="calcCancel">ยกเลิก</button></div>
+      <button class="save" id="calcSave">บันทึก ROP / EOQ</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole } from './guard.js';
+    import { esc, fmtDate, productPic } from './status.js';
+    import { collection, doc, onSnapshot, query, orderBy, limit, writeBatch, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+
+    let products = [];
+    let moves = [];
+    let filter = 'all';
+    let adminEmail = '';
+    let current = null;
+
+    const LEVEL = {
+      ok:  { label: 'ปกติ',          color: '#15803d', bg: '#dcfce7', bar: '#22c55e' },
+      low: { label: 'ถึงจุดสั่งซื้อ', color: '#b45309', bg: '#fef3c7', bar: '#f59e0b' },
+      out: { label: 'สินค้าหมด',      color: '#b91c1c', bg: '#fee2e2', bar: '#dc2626' }
+    };
+    const TYPE = {
+      receive: '📥 รับเข้า',
+      sale:    '🛒 ขาย',
+      cancel:  '↩️ คืนจากยกเลิก',
+      adjust:  '✏️ ปรับยอด'
+    };
+
+    const stockOf = p => Number(p.stock ?? 0);
+    function level(p) {
+      const s = stockOf(p);
+      if (s <= 0) return 'out';
+      if (p.rop != null && s <= p.rop) return 'low';
+      return 'ok';
+    }
+
+    // 1) ตรวจสิทธิ์แอดมิน → ฟังข้อมูล
+    requireRole('admin', function (user) {
+      adminEmail = user.email;
+
+      onSnapshot(collection(db, 'products'), snap => {
+        products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render();
+      });
+
+      const q = query(collection(db, 'stockMoves'), orderBy('at', 'desc'), limit(20));
+      onSnapshot(q, snap => {
+        moves = snap.docs.map(d => d.data());
+        renderMoves();
+      }, error => console.log(error.code));
+
+      document.body.style.visibility = 'visible';
+    });
+
+    // 2) รายการสินค้า
+    function render() {
+      const count = lv => products.filter(p => level(p) === lv).length;
+      const value = products.reduce((sum, p) => sum + Math.max(0, stockOf(p)) * Number(p.price || 0), 0);
+
+      $('stats').innerHTML = `
+        <div class="stat"><b>${products.length}</b><small>รายการสินค้า</small></div>
+        <div class="stat"><b style="color:#b45309">${count('low')}</b><small>ถึงจุดสั่งซื้อ</small></div>
+        <div class="stat"><b style="color:#b91c1c">${count('out')}</b><small>สินค้าหมด</small></div>
+        <div class="stat"><b>฿${value.toLocaleString()}</b><small>มูลค่าตามราคาขาย</small></div>`;
+
+      $('chips').innerHTML = [
+        ['all', 'ทั้งหมด', products.length],
+        ['low', '⚠️ ถึงจุดสั่งซื้อ', count('low')],
+        ['out', '❌ หมด', count('out')],
+        ['ok',  '✅ ปกติ', count('ok')]
+      ].map(([k, label, n]) => `<button class="chip ${k === filter ? 'active' : ''}" data-f="${k}">${label} (${n})</button>`).join('');
+
+      const rank = { out: 0, low: 1, ok: 2 };
+      const list = products
+        .filter(p => filter === 'all' || level(p) === filter)
+        .sort((a, b) => rank[level(a)] - rank[level(b)] || a.id.localeCompare(b.id));
+
+      if (list.length === 0) {
+        $('list').innerHTML = '<p class="empty">ไม่มีสินค้าในกลุ่มนี้</p>';
+        return;
+      }
+
+      $('list').innerHTML = list.map(p => {
+        const s = stockOf(p);
+        const lv = level(p);
+        const L = LEVEL[lv];
+        const max = Math.max(s, (p.rop || 0) + (p.eoq || 0), 1);
+        const pct = Math.max(0, Math.min(100, s / max * 100));
+        const ropPct = p.rop ? Math.min(100, p.rop / max * 100) : null;
+
+        let alert = '';
+        if (lv === 'low') alert = `<div class="alert">⚠️ ถึงจุดสั่งซื้อแล้ว ควรสั่งเพิ่ม <b>${p.eoq ?? '-'}</b> ชิ้น (EOQ)</div>`;
+        if (lv === 'out') alert = `<div class="alert out">❌ สินค้าหมด ควรสั่งด่วน <b>${p.eoq ?? '-'}</b> ชิ้น (EOQ)</div>`;
+
+        return `
+          <div class="prod ${lv}">
+            <div class="ptop">
+              <div class="pic">${productPic(p)}</div>
+              <div class="pinfo">
+                <div class="pname">${esc(p.name)}</div>
+                <div class="sub">${esc(p.id)} ·
+                  <span style="background:${L.bg};color:${L.color};padding:1px 8px;border-radius:999px;font-size:12px">${L.label}</span>
+                  ${p.active === false ? '<span style="color:#94a3b8;font-size:12px"> · ซ่อนจากหน้าร้าน</span>' : ''}
+                </div>
+              </div>
+              <div class="qty"><b style="color:${L.color}">${s}</b><small>คงเหลือ (ชิ้น)</small></div>
+            </div>
+            <div class="bar">
+              <div class="fill" style="width:${pct}%;background:${L.bar}"></div>
+              ${ropPct != null ? `<div class="rop" style="left:calc(${ropPct}% - 1px)" title="ROP"></div>` : ''}
+            </div>
+            <div class="legend">
+              <span>ROP (จุดสั่งซื้อ): <b>${p.rop ?? 'ยังไม่ตั้ง'}</b></span>
+              <span>EOQ (สั่งครั้งละ): <b>${p.eoq ?? 'ยังไม่ตั้ง'}</b></span>
+            </div>
+            ${alert}
+            <div class="btns">
+              <button data-calc="${esc(p.id)}">🧮 ROP / EOQ</button>
+              <button class="primary" data-recv="${esc(p.id)}">📥 รับสินค้าเข้า</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // 3) ตารางความเคลื่อนไหว
+    function renderMoves() {
+      if (moves.length === 0) {
+        $('moves').innerHTML = '<p class="empty">ยังไม่มีรายการ</p>';
+        return;
+      }
+      $('moves').innerHTML = `
+        <table>
+          <tr><th>เวลา</th><th>สินค้า</th><th>ประเภท</th><th>จำนวน</th><th>อ้างอิง</th><th>โดย</th></tr>
+          ${moves.map(m => `
+            <tr>
+              <td>${fmtDate(m.at)}</td>
+              <td>${esc(m.pid)}</td>
+              <td>${TYPE[m.type] || esc(m.type)}</td>
+              <td class="${m.qty >= 0 ? 'plus' : 'minus'}">${m.qty >= 0 ? '+' : ''}${m.qty}</td>
+              <td>${esc(m.ref || '-')}</td>
+              <td>${esc(m.by || '-')}</td>
+            </tr>`).join('')}
+        </table>`;
+    }
+
+    // 4) ตัวกรอง
+    $('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      filter = btn.dataset.f;
+      render();
+    });
+
+    // 5) ปุ่มในการ์ด
+    $('list').addEventListener('click', e => {
+      const recv = e.target.closest('[data-recv]');
+      const calc = e.target.closest('[data-calc]');
+      if (recv) openRecv(recv.dataset.recv);
+      if (calc) openCalc(calc.dataset.calc);
+    });
+
+    // ---------- 6) รับสินค้าเข้า ----------
+    function openRecv(id) {
+      current = id;
+      const p = products.find(x => x.id === id);
+      $('recvName').textContent = `${p.id} · ${p.name} · คงเหลือ ${stockOf(p)} ชิ้น`;
+      $('recvQty').value = p.eoq || '';
+      $('recvRef').value = '';
+      $('recvModal').classList.add('show');
+    }
+    $('recvCancel').addEventListener('click', () => $('recvModal').classList.remove('show'));
+
+    $('recvSave').addEventListener('click', async () => {
+      const qty = Math.floor(Number($('recvQty').value));
+      if (!qty || qty <= 0) {
+        alert('กรุณาใส่จำนวนที่มากกว่า 0');
+        return;
+      }
+      const p = products.find(x => x.id === current);
+      const btn = $('recvSave');
+      btn.disabled = true;
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'products', current), { stock: increment(qty) });
+        batch.set(doc(collection(db, 'stockMoves')), {
+          pid: current, name: p.name, qty, type: 'receive',
+          ref: $('recvRef').value.trim(), by: adminEmail, at: serverTimestamp()
+        });
+        await batch.commit();
+        $('recvModal').classList.remove('show');
+      } catch (error) {
+        console.log(error.code);
+        alert('บันทึกไม่สำเร็จ: ' + error.code);
+      }
+      btn.disabled = false;
+    });
+
+    // ---------- 7) คำนวณ EOQ / ROP ----------
+    function openCalc(id) {
+      current = id;
+      const p = products.find(x => x.id === id);
+      const i = p.eoqInputs || {};
+      $('calcName').textContent = `${p.id} · ${p.name}`;
+      $('cD').value = i.D ?? '';
+      $('cS').value = i.S ?? '';
+      $('cH').value = i.H ?? '';
+      $('cL').value = i.L ?? '';
+      $('cSS').value = i.SS ?? '';
+      $('cDays').value = i.days ?? 365;
+      $('rEOQ').value = p.eoq ?? '';
+      $('rROP').value = p.rop ?? '';
+      $('formula').innerHTML = 'กรอก D, S, H, L เพื่อคำนวณ';
+      $('calcModal').classList.add('show');
+      if (i.D) compute();
+    }
+    $('calcCancel').addEventListener('click', () => $('calcModal').classList.remove('show'));
+
+    function compute() {
+      const D = Number($('cD').value);
+      const S = Number($('cS').value);
+      const H = Number($('cH').value);
+      const L = Number($('cL').value);
+      const SS = Number($('cSS').value) || 0;
+      const days = Number($('cDays').value) || 365;
+      const lines = [];
+
+      if (D > 0 && S > 0 && H > 0) {
+        const eoq = Math.sqrt(2 * D * S / H);
+        $('rEOQ').value = Math.round(eoq);
+        lines.push(`<b>EOQ</b> = √(2 × D × S ÷ H) = √(2 × ${D} × ${S} ÷ ${H}) = ${eoq.toFixed(2)} ≈ <b>${Math.round(eoq)}</b> ชิ้น`);
+      }
+
+      if (D > 0 && L >= 0 && $('cL').value !== '') {
+        const d = D / days;
+        const rop = d * L + SS;
+        $('rROP').value = Math.ceil(rop);
+        lines.push(`ความต้องการต่อวัน d = ${D} ÷ ${days} = ${d.toFixed(2)} ชิ้น/วัน`);
+        lines.push(`<b>ROP</b> = d × L + SS = ${d.toFixed(2)} × ${L} + ${SS} = ${rop.toFixed(2)} ≈ <b>${Math.ceil(rop)}</b> ชิ้น`);
+      }
+
+      $('formula').innerHTML = lines.length ? lines.join('<br>') : 'กรอก D, S, H, L เพื่อคำนวณ';
+    }
+    $('calcInputs').addEventListener('input', compute);
+
+    $('calcSave').addEventListener('click', async () => {
+      const eoq = Math.round(Number($('rEOQ').value));
+      const rop = Math.round(Number($('rROP').value));
+      if (!(eoq > 0) || !(rop >= 0)) {
+        alert('กรุณาคำนวณหรือใส่ค่า EOQ และ ROP ให้ถูกต้อง');
+        return;
+      }
+      const btn = $('calcSave');
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, 'products', current), {
+          eoq, rop,
+          eoqInputs: {
+            D: Number($('cD').value) || null,
+            S: Number($('cS').value) || null,
+            H: Number($('cH').value) || null,
+            L: Number($('cL').value) || null,
+            SS: Number($('cSS').value) || 0,
+            days: Number($('cDays').value) || 365
+          }
+        });
+        $('calcModal').classList.remove('show');
+      } catch (error) {
+        console.log(error.code);
+        alert('บันทึกไม่สำเร็จ: ' + error.code);
+      }
+      btn.disabled = false;
+    });
+
+    // ---------- 8) เครื่องมือ: ตั้งค่าสต็อกตัวอย่าง ----------
+    const SAMPLE = {
+      P01: { stock: 400, rop: 252, eoq: 316 },
+      P02: { stock: 120, rop: 80,  eoq: 150 },
+      P03: { stock: 45,  rop: 50,  eoq: 100 },
+      P04: { stock: 30,  rop: 40,  eoq: 80  },
+      P05: { stock: 25,  rop: 15,  eoq: 30  },
+      P06: { stock: 90,  rop: 40,  eoq: 100 },
+      P07: { stock: 0,   rop: 20,  eoq: 50  }
+    };
+
+    $('sampleBtn').addEventListener('click', async () => {
+      if (!confirm('ตั้งยอดสต็อก ROP และ EOQ ของ P01–P07 เป็นค่าตัวอย่าง?')) return;
+      $('sampleStatus').textContent = 'กำลังบันทึก...';
+      try {
+        const batch = writeBatch(db);
+        products.filter(p => SAMPLE[p.id]).forEach(p => {
+          const s = SAMPLE[p.id];
+          batch.update(doc(db, 'products', p.id), { stock: s.stock, rop: s.rop, eoq: s.eoq });
+          batch.set(doc(collection(db, 'stockMoves')), {
+            pid: p.id, name: p.name, qty: s.stock - stockOf(p), type: 'adjust',
+            ref: 'ตั้งค่าเริ่มต้น', by: adminEmail, at: serverTimestamp()
+          });
+        });
+        await batch.commit();
+        $('sampleStatus').textContent = '✅ ตั้งค่าแล้ว';
+      } catch (error) {
+        $('sampleStatus').textContent = '❌ ' + error.code;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVision | กล้องวงจรปิดและระบบความปลอดภัย</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 480px; min-height: 100vh; background: #f7f9fc; }
+
+    header { background: #2563eb; color: white; padding: 16px 20px 20px; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .logo { font-size: 28px; }
+    .brand { flex: 1; }
+    .brand b { font-size: 20px; display: block; }
+    .brand small { opacity: .85; }
+    .cart { position: relative; font-size: 24px; text-decoration: none; margin-right: 6px; }
+    .badge { position: absolute; top: -6px; right: -10px; background: #ef4444; color: white; font-size: 12px; border-radius: 999px; padding: 1px 6px; }
+    .login-btn { background: #1e40af; color: white; border-radius: 10px; padding: 8px 12px; text-decoration: none; font-size: 14px; }
+    .search { margin-top: 14px; width: 100%; padding: 12px 14px; border: none; border-radius: 12px; font-size: 16px; font-family: inherit; }
+
+    main { padding: 20px; }
+    .banner { background: linear-gradient(120deg, #3b82f6, #6d28d9); color: white; border-radius: 18px; padding: 20px; display: flex; align-items: center; }
+    .tag { background: #facc15; color: #1e293b; font-size: 12px; padding: 3px 10px; border-radius: 999px; }
+    .banner h2 { margin: 10px 0 4px; }
+    .banner p { margin: 0 0 14px; opacity: .9; }
+    .banner a { background: white; color: #2563eb; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; }
+    .big { font-size: 56px; margin-left: auto; }
+    h3 { margin: 24px 0 12px; display: flex; justify-content: space-between; align-items: center; }
+    h3 a { font-size: 14px; color: #2563eb; text-decoration: none; font-weight: 400; }
+
+    .cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .cat { background: #e8efff; border: none; border-radius: 14px; padding: 10px 2px; font-family: inherit; font-size: 12px; cursor: pointer; line-height: 1.3; }
+    .cat span { display: block; font-size: 24px; margin-bottom: 4px; }
+    .cat.active { background: #2563eb; color: white; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; }
+    .pic { position: relative; background: #f1f4f9; border-radius: 10px; height: 130px; display: flex; align-items: center; justify-content: center; font-size: 44px; overflow: hidden; }
+    .off { position: absolute; top: 6px; left: 6px; background: #ef4444; color: white; font-size: 12px; padding: 2px 6px; border-radius: 6px; z-index: 1; }
+    .name { font-size: 14px; margin: 8px 0 4px; flex: 1; }
+    .price { color: #dc2626; font-weight: 600; font-size: 18px; }
+    .old { color: #94a3b8; text-decoration: line-through; font-size: 13px; margin-left: 4px; font-weight: 400; }
+    .add { margin-top: 8px; background: #2563eb; color: white; border: none; border-radius: 10px; padding: 8px; font-family: inherit; cursor: pointer; }
+    .add.done { background: #16a34a; }
+    .empty { grid-column: 1 / -1; text-align: center; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="top">
+        <div class="logo">📹</div>
+        <div class="brand">
+          <b>SecureVision</b>
+          <small>กล้องวงจรปิด · ระบบดับเพลิง</small>
+        </div>
+        <a class="cart" href="cart.html">🛒<span class="badge" id="cartCount">0</span></a>
+        <a class="login-btn" id="loginBtn" href="role.html">🔒 เข้าสู่ระบบ</a>
+      </div>
+      <input class="search" id="search" placeholder="🔍 ค้นหาสินค้า...">
+    </header>
+
+    <main>
+      <div class="banner">
+        <div>
+          <span class="tag">โปรโมชั่นพิเศษ</span>
+          <h2>กล้องวงจรปิด 2K/4MP</h2>
+          <p>ดูแลคุณ... ได้ทุกที่ทุกเวลา</p>
+          <a href="#products">ช้อปเลย →</a>
+        </div>
+        <div class="big">📷</div>
+      </div>
+
+      <h3>หมวดหมู่สินค้า</h3>
+      <div class="cats" id="cats"></div>
+
+      <h3 id="products">สินค้าแนะนำ <a href="#" id="showAll">ดูทั้งหมด →</a></h3>
+      <div class="grid" id="grid"><p class="empty">กำลังโหลดสินค้า...</p></div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { collection, doc, onSnapshot, setDoc, increment } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import { renderNav } from './nav.js';
+    import { CATEGORIES, esc, productPic } from './status.js';
+
+    renderNav('home');
+
+    let products = [];
+    let currentCat = null;
+    let user = null;
+    let stopCartListener = null;
+
+    // 1) ฟังสินค้า (เฉพาะที่ไม่ได้ซ่อน)
+    onSnapshot(collection(db, 'products'), function (snap) {
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.active !== false);
+      products.sort((a, b) => a.id.localeCompare(b.id));
+      renderProducts();
+    });
+
+    // 2) ปุ่มหมวดหมู่
+    function renderCats() {
+      document.getElementById('cats').innerHTML = CATEGORIES.map(c => `
+        <button class="cat ${c.id === currentCat ? 'active' : ''}" data-id="${c.id}">
+          <span>${c.icon}</span>${c.name}
+        </button>`).join('');
+    }
+
+    // 3) การ์ดสินค้า
+    function renderProducts() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const list = products.filter(p =>
+        (!currentCat || p.cat === currentCat) && p.name.toLowerCase().includes(q)
+      );
+
+      const grid = document.getElementById('grid');
+      if (list.length === 0) {
+        grid.innerHTML = '<p class="empty">ไม่พบสินค้า</p>';
+        return;
+      }
+
+      grid.innerHTML = list.map(p => {
+        const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+        return `
+          <div class="card">
+            <div class="pic">${off ? `<span class="off">-${off}%</span>` : ''}${productPic(p)}</div>
+            <div class="name">${esc(p.name)}</div>
+            <div class="price">฿${p.price.toLocaleString()}${p.oldPrice ? `<span class="old">฿${p.oldPrice.toLocaleString()}</span>` : ''}</div>
+            <button class="add" data-id="${esc(p.id)}">🛒 เพิ่มใส่ตะกร้า</button>
+          </div>`;
+      }).join('');
+    }
+
+    // 4) กดหมวดหมู่
+    document.getElementById('cats').addEventListener('click', e => {
+      const btn = e.target.closest('.cat');
+      if (!btn) return;
+      currentCat = currentCat === btn.dataset.id ? null : btn.dataset.id;
+      renderCats();
+      renderProducts();
+    });
+
+    // 5) ดูทั้งหมด / ค้นหา
+    document.getElementById('showAll').addEventListener('click', e => {
+      e.preventDefault();
+      currentCat = null;
+      document.getElementById('search').value = '';
+      renderCats();
+      renderProducts();
+    });
+    document.getElementById('search').addEventListener('input', renderProducts);
+
+    // 6) เพิ่มใส่ตะกร้า
+    document.getElementById('grid').addEventListener('click', async e => {
+      const btn = e.target.closest('.add');
+      if (!btn) return;
+      if (!user) {
+        alert('กรุณาเข้าสู่ระบบก่อนสั่งซื้อ');
+        window.location.href = 'login.html?role=customer';
+        return;
+      }
+      try {
+        await setDoc(doc(db, 'carts', user.uid), { items: { [btn.dataset.id]: increment(1) } }, { merge: true });
+        btn.textContent = '✅ เพิ่มแล้ว';
+        btn.classList.add('done');
+        setTimeout(() => {
+          btn.textContent = '🛒 เพิ่มใส่ตะกร้า';
+          btn.classList.remove('done');
+        }, 1000);
+      } catch (error) {
+        console.log(error.code);
+        alert('เพิ่มสินค้าไม่สำเร็จ: ' + error.code);
+      }
+    });
+
+    // 7) สถานะล็อกอิน + จำนวนในตะกร้า
+    onAuthStateChanged(auth, u => {
+      user = u;
+      const btn = document.getElementById('loginBtn');
+      const badge = document.getElementById('cartCount');
+      if (stopCartListener) { stopCartListener(); stopCartListener = null; }
+
+      if (u) {
+        btn.textContent = '🚪 ออกจากระบบ';
+        btn.href = '#';
+        btn.onclick = async e => { e.preventDefault(); await signOut(auth); };
+        stopCartListener = onSnapshot(doc(db, 'carts', u.uid), snap => {
+          const items = snap.exists() ? (snap.data().items || {}) : {};
+          badge.textContent = Object.values(items).reduce((sum, qty) => sum + qty, 0);
+        });
+      } else {
+        btn.textContent = '🔒 เข้าสู่ระบบ';
+        btn.href = 'role.html';
+        btn.onclick = null;
+        badge.textContent = 0;
+      }
+    });
+
+    renderCats();
+  </script>
+</body>
+</html>

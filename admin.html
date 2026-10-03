@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผู้ดูแล | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; }
+    .app { width: 100%; max-width: 720px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #0f2350; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    header b { font-size: 20px; display: block; }
+    header small { opacity: .75; }
+    .hbtns { display: flex; gap: 8px; }
+    .hbtns a, .hbtns button { background: rgba(255,255,255,.15); color: white; border: none; border-radius: 10px; padding: 8px 12px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
+    main { padding: 16px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px 6px; text-align: center; text-decoration: none; color: inherit; }
+    .stat b { display: block; font-size: 22px; }
+    .stat small { color: #64748b; font-size: 12px; }
+
+    .chips { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
+    .chip { flex-shrink: 0; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 6px 14px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .chip.active { background: #0f2350; color: white; border-color: #0f2350; }
+
+    .order { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 14px; margin-bottom: 12px; cursor: pointer; }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .no { font-weight: 600; }
+    .sub { font-size: 13px; color: #64748b; }
+    .total { color: #dc2626; font-weight: 600; }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; }
+    .tag-ok { color: #15803d; }
+    .tag-wait { color: #c2410c; }
+    .detail { margin-top: 12px; border-top: 1px dashed #dde3ef; padding-top: 12px; cursor: default; }
+    .line { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; gap: 10px; }
+    .box { background: #f8fafc; border-radius: 10px; padding: 10px; font-size: 14px; margin-top: 10px; line-height: 1.7; }
+    .warn { background: #fef3c7; color: #92400e; border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-bottom: 8px; }
+    .ok { background: #dcfce7; color: #166534; border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-bottom: 8px; }
+    .slip { display: block; width: 100%; max-width: 320px; margin: 10px auto 0; border-radius: 10px; border: 1px solid #e5e9f2; background: white; }
+    .ghost { width: 100%; margin-top: 10px; background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 10px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .assign { display: flex; gap: 8px; margin-top: 10px; }
+    .assign select { flex: 1; padding: 10px; border: 1px solid #dde3ef; border-radius: 10px; font-family: inherit; font-size: 14px; }
+    .assign button { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #e08a00; color: white; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .actions button { flex: 1; padding: 11px; border-radius: 10px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .next { background: #2563eb; color: white; border: none; }
+    .cancel { background: white; color: #dc2626; border: 1px solid #fecaca; }
+    .empty { text-align: center; color: #64748b; padding: 30px 0; }
+
+    .tools { margin-top: 28px; border-top: 1px solid #e5e9f2; padding-top: 16px; color: #64748b; font-size: 14px; }
+    .tools button { background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 8px 14px; font-family: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div><b>📊 ผู้ดูแลระบบ</b><small id="who"></small></div>
+      <div class="hbtns">
+        <a href="manage.html">🏷️ สินค้า</a>
+        <a href="stock.html">📦 สต็อก</a>
+        <button id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="stats" id="stats"></div>
+      <div class="chips" id="chips"></div>
+      <div id="list"><p class="empty">กำลังโหลด...</p></div>
+
+      <div class="tools">
+        🛠 เครื่องมือ
+        <p><button id="seedBtn">📥 นำเข้าสินค้าตัวอย่าง</button> <span id="seedStatus"></span></p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole, logout } from './guard.js';
+    import { STATUS, nextStatus, badge, jobBadge, fmtDate, PAYMENT, esc } from './status.js';
+    import { collection, doc, getDoc, onSnapshot, updateDoc, setDoc, writeBatch, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+
+    const ACTION = {
+      confirmed: '✔ ยืนยันคำสั่งซื้อ',
+      shipping:  '🚚 แจ้งว่าจัดส่งแล้ว',
+      completed: '🏁 ปิดคำสั่งซื้อ (สำเร็จ)'
+    };
+
+    let orders = [];
+    let products = {};
+    let techs = [];
+    let adminEmail = '';
+    let filter = 'pending';
+    const opened = new Set();
+    const slipImages = {};
+
+    const needTech = o => o.install && !o.job && ['confirmed', 'shipping'].includes(o.status);
+    const stockOf = id => Number(products[id]?.stock ?? 0);
+
+    // 1) ตรวจสิทธิ์แอดมิน → ฟังข้อมูล
+    requireRole('admin', function (user) {
+      adminEmail = user.email;
+      $('who').textContent = user.email;
+
+      onSnapshot(collection(db, 'orders'), snap => {
+        orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        orders.sort((a, b) => (b.createdAt?.toMillis() ?? Date.now()) - (a.createdAt?.toMillis() ?? Date.now()));
+        render();
+      });
+
+      onSnapshot(collection(db, 'products'), snap => {
+        products = {};
+        snap.docs.forEach(d => { products[d.id] = d.data(); });
+        render();
+      });
+
+      onSnapshot(collection(db, 'staff'), snap => {
+        techs = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(t => t.role === 'tech');
+        render();
+      });
+
+      document.body.style.visibility = 'visible';
+    });
+
+    // 2) วาดทั้งหน้า
+    function render() {
+      const count = s => orders.filter(o => o.status === s).length;
+      const sales = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total || 0), 0);
+      const reorder = Object.values(products).filter(p => Number(p.stock ?? 0) <= 0 || (p.rop != null && Number(p.stock ?? 0) <= p.rop)).length;
+
+      $('stats').innerHTML = `
+        <div class="stat"><b style="color:#b45309">${count('pending')}</b><small>รอยืนยัน</small></div>
+        <div class="stat"><b style="color:#c2410c">${orders.filter(needTech).length}</b><small>รอมอบหมายช่าง</small></div>
+        <a class="stat" href="stock.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
+        <div class="stat"><b>฿${sales.toLocaleString()}</b><small>ยอดขายรวม</small></div>`;
+
+      const keys = ['all', ...Object.keys(STATUS)];
+      $('chips').innerHTML = keys.map(k => {
+        const label = k === 'all' ? 'ทั้งหมด' : STATUS[k].label;
+        const n = k === 'all' ? orders.length : count(k);
+        return `<button class="chip ${k === filter ? 'active' : ''}" data-f="${k}">${label} (${n})</button>`;
+      }).join('');
+
+      const list = orders.filter(o => filter === 'all' || o.status === filter);
+      if (list.length === 0) {
+        $('list').innerHTML = '<p class="empty">ไม่มีคำสั่งซื้อในสถานะนี้</p>';
+        return;
+      }
+
+      $('list').innerHTML = list.map(o => `
+        <div class="order" data-id="${esc(o.id)}">
+          <div class="head">
+            <div>
+              <div class="no">${esc(o.id)}</div>
+              <div class="sub">${esc(o.shipping?.name)} · ${fmtDate(o.createdAt)}</div>
+              <div class="tags">
+                ${o.slipAt ? '<span class="tag-ok">🧾 แนบสลิปแล้ว</span>' : ''}
+                ${needTech(o) ? '<span class="tag-wait">🔧 รอมอบหมายช่าง</span>' : ''}
+                ${o.job ? jobBadge(o.job.status) : ''}
+              </div>
+            </div>
+            <div style="text-align:right">
+              ${badge(o.status)}
+              <div class="total">฿${Number(o.total).toLocaleString()}</div>
+            </div>
+          </div>
+          ${opened.has(o.id) ? detail(o) : ''}
+        </div>`).join('');
+    }
+
+    // 3) รายละเอียด
+    function detail(o) {
+      const warns = [];
+      o.items.forEach(i => {
+        const p = products[i.id];
+        if (!p) warns.push(`⚠️ ไม่พบสินค้า ${esc(i.id)} ในระบบ`);
+        else if (p.price !== i.price) warns.push(`⚠️ ${esc(i.name)}: ราคาในออเดอร์ ฿${i.price} ≠ ราคาปัจจุบัน ฿${p.price}`);
+        // เช็กสต็อกเฉพาะออเดอร์ที่ยังไม่ได้ตัดสต็อก
+        if (p && o.status === 'pending' && stockOf(i.id) < i.qty) {
+          warns.push(`📦 ${esc(i.name)}: สต็อกเหลือ ${stockOf(i.id)} ชิ้น ไม่พอสำหรับ ${i.qty} ชิ้น`);
+        }
+      });
+      const sum = o.items.reduce((s, i) => s + i.price * i.qty, 0);
+      if (sum !== o.subtotal) warns.push('⚠️ ผลรวมรายการสินค้าไม่ตรงกับยอดที่บันทึก');
+      if (o.subtotal + o.shipFee + o.installFee !== o.total) warns.push('⚠️ ยอดชำระไม่ตรงกับผลรวม');
+      const check = warns.length
+        ? warns.map(w => `<div class="warn">${w}</div>`).join('')
+        : '<div class="ok">✅ ตรวจยอดแล้ว ราคา ผลรวม และสต็อกถูกต้อง</div>';
+
+      const items = o.items.map(i => `
+        <div class="line"><span>${esc(i.name)} × ${i.qty}</span><span>฿${(i.price * i.qty).toLocaleString()}</span></div>
+      `).join('');
+
+      let slip = '';
+      if (o.payment === 'transfer') {
+        if (!o.slipAt) slip = '<div class="warn" style="margin-top:10px">⏳ ลูกค้ายังไม่ได้แนบสลิป</div>';
+        else if (slipImages[o.id]) slip = `<img class="slip" src="${esc(slipImages[o.id])}" alt="สลิป"><div class="sub" style="text-align:center">แนบเมื่อ ${fmtDate(o.slipAt)} · ตรวจยอด ฿${Number(o.total).toLocaleString()} ให้ตรงกับสลิป</div>`;
+        else slip = `<button class="ghost" data-act="slip" data-id="${esc(o.id)}">🧾 ดูสลิปโอนเงิน</button>`;
+      }
+
+      const next = nextStatus(o.status);
+      const canCancel = o.status !== 'completed' && o.status !== 'cancelled';
+      const actions = (next || canCancel) ? `
+        <div class="actions">
+          ${canCancel ? `<button class="cancel" data-act="cancel" data-id="${esc(o.id)}">ยกเลิก</button>` : ''}
+          ${next ? `<button class="next" data-act="next" data-id="${esc(o.id)}">${ACTION[next]}</button>` : ''}
+        </div>` : '';
+
+      return `
+        <div class="detail">
+          ${check}
+          ${items}
+          <div class="line"><span>ค่าจัดส่ง</span><span>${o.shipFee ? '฿' + o.shipFee : 'ฟรี'}</span></div>
+          ${o.install ? `<div class="line"><span>ค่าติดตั้ง</span><span>฿${o.installFee}</span></div>` : ''}
+          <div class="line"><b>ยอดชำระ</b><b>฿${Number(o.total).toLocaleString()}</b></div>
+          ${o.stockDeducted ? '<div class="sub" style="margin-top:4px">📦 ตัดสต็อกแล้ว</div>' : ''}
+          <div class="box">👤 ${esc(o.shipping?.name)} · 📞 ${esc(o.shipping?.phone)}<br>📍 ${esc(o.shipping?.address)}<br>✉️ ${esc(o.email)}</div>
+          <div class="box">${PAYMENT[o.payment] || ''}</div>
+          ${slip}
+          ${jobPart(o)}
+          ${actions}
+        </div>`;
+    }
+
+    // 4) งานติดตั้ง
+    function jobPart(o) {
+      if (!o.install) return '';
+      const j = o.job;
+
+      let html = `<div class="box"><b>🔧 งานติดตั้ง</b> · นัดวันที่ ${esc(o.installDate)}`;
+      if (j) html += `<br>ช่าง: ${esc(j.techName)} · ${jobBadge(j.status)}`;
+      if (j?.note) html += `<br>📝 ${esc(j.note)}`;
+      html += '</div>';
+
+      if (j?.signature && String(j.signature).startsWith('data:image/')) {
+        html += `<img class="slip" src="${esc(j.signature)}" alt="ลายเซ็นลูกค้า"><div class="sub" style="text-align:center">ลายเซ็นลูกค้า · ${fmtDate(j.doneAt)}</div>`;
+      }
+
+      const canAssign = ['confirmed', 'shipping'].includes(o.status) && (!j || j.status === 'assigned');
+      if (canAssign) {
+        if (techs.length === 0) {
+          html += '<div class="warn" style="margin-top:10px">ยังไม่มีรายชื่อช่างในคอลเลกชัน staff</div>';
+        } else {
+          html += `
+            <div class="assign">
+              <select data-tech-for="${esc(o.id)}">
+                ${techs.map(t => `<option value="${esc(t.uid)}" ${j?.techUid === t.uid ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}
+              </select>
+              <button data-act="assign" data-id="${esc(o.id)}">${j ? '🔄 เปลี่ยนช่าง' : '👷 มอบหมายงาน'}</button>
+            </div>`;
+        }
+      } else if (o.status === 'pending') {
+        html += '<div class="sub" style="margin-top:6px">ยืนยันคำสั่งซื้อก่อน จึงจะมอบหมายช่างได้</div>';
+      }
+      return html;
+    }
+
+    // 5) ตัวกรอง
+    $('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      filter = btn.dataset.f;
+      render();
+    });
+
+    // 6) คลิกในรายการ
+    $('list').addEventListener('click', async e => {
+      const btn = e.target.closest('button[data-act]');
+      if (btn) {
+        const id = btn.dataset.id;
+        const o = orders.find(x => x.id === id);
+
+        // 6.1 ดูสลิป
+        if (btn.dataset.act === 'slip') {
+          btn.disabled = true;
+          btn.textContent = 'กำลังโหลด...';
+          try {
+            const s = await getDoc(doc(db, 'slips', id));
+            const img = s.exists() ? String(s.data().image || '') : '';
+            if (img.startsWith('data:image/')) slipImages[id] = img;
+            else alert('ไม่พบรูปสลิป');
+          } catch (error) {
+            alert('โหลดสลิปไม่สำเร็จ: ' + error.code);
+          }
+          render();
+          return;
+        }
+
+        // 6.2 มอบหมายช่าง
+        if (btn.dataset.act === 'assign') {
+          const sel = document.querySelector(`select[data-tech-for="${CSS.escape(id)}"]`);
+          const t = techs.find(x => x.uid === sel.value);
+          if (!t) return;
+          btn.disabled = true;
+          try {
+            await updateDoc(doc(db, 'orders', id), {
+              techUid: t.uid,
+              job: { techUid: t.uid, techName: t.name, status: 'assigned', assignedAt: serverTimestamp() }
+            });
+          } catch (error) {
+            console.log(error.code);
+            alert('มอบหมายไม่สำเร็จ: ' + error.code);
+            btn.disabled = false;
+          }
+          return;
+        }
+
+        // 6.3 เปลี่ยนสถานะ (+ ตัด/คืนสต็อก)
+        const to = btn.dataset.act === 'next' ? nextStatus(o.status) : 'cancelled';
+
+        if (to === 'cancelled' && !confirm('ยืนยันยกเลิกคำสั่งซื้อ ' + id + ' ?' + (o.stockDeducted ? '\n(ระบบจะคืนสต็อกให้อัตโนมัติ)' : ''))) return;
+        if (to === 'confirmed' && o.payment === 'transfer' && !o.slipAt
+            && !confirm('ออเดอร์นี้ยังไม่มีสลิปโอนเงิน ต้องการยืนยันต่อหรือไม่?')) return;
+        if (to === 'confirmed') {
+          const short = o.items.filter(i => stockOf(i.id) < i.qty);
+          if (short.length && !confirm('สต็อกไม่พอ:\n' + short.map(i => `• ${i.name} เหลือ ${stockOf(i.id)} ต้องการ ${i.qty}`).join('\n') + '\n\nยืนยันต่อหรือไม่? (สต็อกจะติดลบ)')) return;
+        }
+        if (to === 'completed' && o.install && o.job?.status !== 'done'
+            && !confirm('งานติดตั้งยังไม่เสร็จ ต้องการปิดคำสั่งซื้อหรือไม่?')) return;
+
+        btn.disabled = true;
+        try {
+          const batch = writeBatch(db);
+          const update = {
+            status: to,
+            ['history.' + to]: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+
+          // ยืนยัน → ตัดสต็อก (ทำครั้งเดียว)
+          if (to === 'confirmed' && !o.stockDeducted) {
+            update.stockDeducted = true;
+            o.items.forEach(i => {
+              batch.update(doc(db, 'products', i.id), { stock: increment(-i.qty) });
+              batch.set(doc(collection(db, 'stockMoves')), {
+                pid: i.id, name: i.name, qty: -i.qty, type: 'sale',
+                ref: o.id, by: adminEmail, at: serverTimestamp()
+              });
+            });
+          }
+
+          // ยกเลิกหลังตัดสต็อกแล้ว → คืนสต็อก
+          if (to === 'cancelled' && o.stockDeducted) {
+            update.stockDeducted = false;
+            o.items.forEach(i => {
+              batch.update(doc(db, 'products', i.id), { stock: increment(i.qty) });
+              batch.set(doc(collection(db, 'stockMoves')), {
+                pid: i.id, name: i.name, qty: i.qty, type: 'cancel',
+                ref: o.id, by: adminEmail, at: serverTimestamp()
+              });
+            });
+          }
+
+          batch.update(doc(db, 'orders', id), update);
+          await batch.commit();
+        } catch (error) {
+          console.log(error.code);
+          alert('อัปเดตไม่สำเร็จ: ' + error.code);
+          btn.disabled = false;
+        }
+        return;
+      }
+
+      if (e.target.closest('.detail')) return;
+      const card = e.target.closest('.order');
+      if (!card) return;
+      const id = card.dataset.id;
+      opened.has(id) ? opened.delete(id) : opened.add(id);
+      render();
+    });
+
+    // 7) เครื่องมือ: นำเข้าสินค้าตัวอย่าง (merge: ไม่ลบสต็อก/ROP/EOQ ที่ตั้งไว้)
+    const sampleProducts = [
+      { id: 'P01', name: 'กล้องวงจรปิด WiFi 3MP หมุนได้',   cat: 'indoor',  price: 990,  oldPrice: 1290,  icon: '📷' },
+      { id: 'P02', name: 'กล้องโดม 4MP Night Vision',        cat: 'indoor',  price: 1890, oldPrice: 2290,  icon: '📷' },
+      { id: 'P03', name: 'กล้องกระบอก 5MP ภาพสี 24 ชม.',     cat: 'outdoor', price: 2490, oldPrice: 2890,  icon: '🎥' },
+      { id: 'P04', name: 'กล้องแบตเตอรี่ 2K โซลาร์เซลล์',    cat: 'outdoor', price: 2190, oldPrice: null,  icon: '☀️' },
+      { id: 'P05', name: 'ชุดกล้อง 4 ตัว + NVR + HDD 1TB',  cat: 'kit',     price: 8990, oldPrice: 10490, icon: '📦' },
+      { id: 'P06', name: 'ฮาร์ดดิสก์กล้องวงจรปิด 2TB',      cat: 'acc',     price: 2290, oldPrice: null,  icon: '💽' },
+      { id: 'P07', name: 'สาย LAN CAT6 ภายนอก 100 ม.',      cat: 'acc',     price: 1590, oldPrice: null,  icon: '🔌' }
+    ];
+
+    $('seedBtn').addEventListener('click', async () => {
+      $('seedStatus').textContent = 'กำลังบันทึก...';
+      try {
+        for (const p of sampleProducts) {
+          await setDoc(doc(db, 'products', p.id), {
+            name: p.name, cat: p.cat, price: p.price, oldPrice: p.oldPrice, icon: p.icon
+          }, { merge: true });
+        }
+        $('seedStatus').textContent = '✅ บันทึก ' + sampleProducts.length + ' รายการแล้ว';
+      } catch (error) {
+        $('seedStatus').textContent = '❌ ' + error.code;
+      }
+    });
+
+    $('logoutBtn').addEventListener('click', logout);
+  </script>
+</body>
+</html>

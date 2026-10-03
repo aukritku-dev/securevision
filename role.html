@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เลือกประเภทผู้ใช้ | SecureVision</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f3f5fa;
+      display: flex;
+      justify-content: center;
+    }
+    .page { width: 100%; max-width: 420px; padding: 24px; }
+    .back { color: #667; text-decoration: none; }
+    h1 { color: #0f2350; margin-bottom: 4px; }
+    p  { color: #667; margin-top: 0; }
+    .role {
+      display: block;
+      background: white;
+      border: 1px solid #dde3ef;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+      text-decoration: none;
+      color: #0f2350;
+    }
+    .role:hover { border-color: #1f5eff; }
+    .role b { font-size: 18px; }
+    .role small { display: block; color: #667; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="index.html">← กลับหน้าร้าน</a>
+    <h1>SecureVision</h1>
+    <p>เลือกประเภทผู้ใช้งาน</p>
+
+    <a class="role" href="login.html?role=customer">
+      <b>🛒 ลูกค้า</b>
+      <small>ซื้อสินค้า ติดตามคำสั่งซื้อ แจ้งซ่อม</small>
+    </a>
+
+    <a class="role" href="login.html?role=tech">
+      <b>🔧 ช่างเทคนิค</b>
+      <small>รับงาน ปิดงาน เบิกอุปกรณ์</small>
+    </a>
+
+    <a class="role" href="login.html?role=admin">
+      <b>📊 ผู้ดูแลระบบ</b>
+      <small>จัดการสินค้า ออเดอร์ สต็อก รายงาน</small>
+    </a>
+  </div>
+</body>
+</html>
