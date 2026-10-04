@@ -61,6 +61,7 @@
         <a href="manage.html">🏷️ สินค้า</a>
         <a href="stock.html">📦 สต็อก</a>
         <a href="claims.html">🛠️ เคลม</a>
+        <a href="report.html">📈 รายงาน</a>
         <button id="logoutBtn">ออกจากระบบ</button>
       </div>
     </header>
@@ -130,14 +131,14 @@
     // 2) วาดทั้งหน้า
     function render() {
       const count = s => orders.filter(o => o.status === s).length;
-      const sales = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total || 0), 0);
+      const sales = orders.filter(o => ['confirmed', 'shipping', 'completed'].includes(o.status)).reduce((s, o) => s + Number(o.total || 0), 0);   // นับเฉพาะที่ยืนยันแล้ว (ตรงกับหน้ารายงาน)
       const reorder = Object.values(products).filter(p => Number(p.stock ?? 0) <= 0 || (p.rop != null && Number(p.stock ?? 0) <= p.rop)).length;
 
       $('stats').innerHTML = `
         <div class="stat"><b style="color:#b45309">${count('pending')}</b><small>รอยืนยัน</small></div>
         <div class="stat"><b style="color:#c2410c">${orders.filter(needTech).length}</b><small>รอมอบหมายช่าง</small></div>
         <a class="stat" href="stock.html"><b style="color:#dc2626">${reorder}</b><small>สินค้าต้องสั่งซื้อ ›</small></a>
-        <div class="stat"><b>฿${sales.toLocaleString()}</b><small>ยอดขายรวม</small></div>`;
+        <a class="stat" href="report.html"><b>฿${sales.toLocaleString()}</b><small>ยอดขาย (ยืนยันแล้ว) ›</small></a>`;
 
       const keys = ['all', ...Object.keys(STATUS)];
       $('chips').innerHTML = keys.map(k => {

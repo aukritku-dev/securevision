@@ -88,7 +88,7 @@
   <script type="module">
     import { db } from './firebase.js';
     import { requireRole, logout } from './guard.js';
-    import { esc } from './status.js';
+    import { esc, jobBadge, fmtDate } from './status.js';
     import {
       collection, doc, getDocs, onSnapshot, updateDoc, writeBatch, increment, serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
@@ -154,7 +154,12 @@
       $('list').innerHTML = list.map(c => {
         const s = CLAIM[c.status] || CLAIM.open;
         let result = '';
-        if (c.status === 'repair' || (c.decision === 'repair')) result += `🔧 ช่าง <b>${esc(c.techName || '-')}</b> · นัดวันที่ <b>${esc(c.appointDate || '-')}</b><br>`;
+        if (c.decision === 'repair') {
+          result += `🔧 ช่าง <b>${esc(c.techName || '-')}</b> · นัดวันที่ <b>${esc(c.appointDate || '-')}</b> · ${jobBadge(c.job?.status || 'assigned')}<br>`;
+          if (c.job?.note) result += `📝 ช่างบันทึก: ${esc(c.job.note)}<br>`;
+          if (String(c.job?.signature || '').startsWith('data:image/'))
+            result += `<img src="${c.job.signature}" data-zoom alt="ลายเซ็นลูกค้า" style="width:160px;height:auto;object-fit:contain;background:white"><br><small style="color:#64748b">ลายเซ็นลูกค้า · ${fmtDate(c.job.doneAt)}</small><br>`;
+        }
         if (c.decision === 'replace') result += '🔁 เปลี่ยนสินค้าใหม่ (ตัดสต็อก 1 ชิ้น)<br>';
         if (c.reply) result += '💬 ' + esc(c.reply) + '<br>';
         if (c.decidedBy) result += `<small style="color:#64748b">ตัดสินโดย ${esc(c.decidedBy)} · ${fmt(c.decidedAt)}</small>`;
@@ -260,7 +265,10 @@
         const date = $('mDate').value;
         if (!date) return alert('กรุณาเลือกวันนัด');
         if (+date.slice(0, 4) > 2400) return alert('กรุณาใช้ปี ค.ศ.');
-        await save(c.id, { status: 'repair', decision: 'repair', techUid: t.uid, techName: t.name || t.code || '', appointDate: date, reply, ...decided });
+        await save(c.id, {
+          status: 'repair', decision: 'repair', techUid: t.uid, techName: t.name || t.code || '', appointDate: date, reply, ...decided,
+          job: { techUid: t.uid, techName: t.name || t.code || '', status: 'assigned', assignedAt: serverTimestamp() }   // ส่งงานไปหน้าช่าง
+        });
       }
 
       if (act === 'replace') {
@@ -284,6 +292,8 @@
       }
 
       if (act === 'done') {
+        if (c.decision === 'repair' && c.job?.status !== 'done'
+            && !confirm('ช่างยังไม่ได้กดปิดงานซ่อม ต้องการปิดเรื่องเคลมเลยหรือไม่?')) return;
         await save(c.id, { status: 'done', reply, doneBy: me.email, doneAt: serverTimestamp() });
       }
 

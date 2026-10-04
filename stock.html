@@ -90,7 +90,7 @@
       <h3>🧾 ความเคลื่อนไหวล่าสุด</h3>
       <div class="tablewrap" id="moves"><p class="empty">ยังไม่มีรายการ</p></div>
 
-      <div class="tools">
+      <div class="tools" hidden>
         🛠 เครื่องมือ
         <p><button id="sampleBtn">📋 ตั้งค่าสต็อกตัวอย่าง (P01–P07)</button> <span id="sampleStatus"></span></p>
       </div>
@@ -162,7 +162,8 @@
       receive: '📥 รับเข้า',
       sale:    '🛒 ขาย',
       cancel:  '↩️ คืนจากยกเลิก',
-      adjust:  '✏️ ปรับยอด'
+      adjust:  '✏️ ปรับยอด',
+      claim:   '🛠️ เปลี่ยนตามเคลม'
     };
 
     const stockOf = p => Number(p.stock ?? 0);

@@ -30,6 +30,10 @@
     .today { background: #dc2626; color: white; font-size: 11px; padding: 1px 8px; border-radius: 999px; margin-left: 4px; }
     .sub { font-size: 13px; color: #64748b; }
     .more { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 6px; }
+    .job.claim { border-left-color: #7c3aed; }
+    .kind { font-size: 11px; padding: 1px 8px; border-radius: 999px; margin-left: 4px; background: #fff7ed; color: #c2410c; }
+    .kind.claim { background: #ede9fe; color: #6d28d9; }
+    .claimimg { display: block; width: 100%; max-width: 260px; margin: 8px auto 0; border-radius: 10px; border: 1px solid #e5e9f2; }
 
     .detail { margin-top: 12px; border-top: 1px dashed #dde3ef; padding-top: 12px; cursor: default; }
     .steps { display: flex; margin-bottom: 12px; }
@@ -77,7 +81,7 @@
 <body>
   <div class="app">
     <header>
-      <div><b>🔧 งานติดตั้งของฉัน</b><small id="who"></small></div>
+      <div><b>🔧 งานของฉัน</b><small id="who"></small></div>
       <button id="logoutBtn">ออกจากระบบ</button>
     </header>
     <main>
@@ -90,10 +94,10 @@
   <!-- หน้าต่างปิดงาน -->
   <div class="modal" id="modal">
     <div class="sheet">
-      <h3 style="margin:0">✅ ปิดงานติดตั้ง</h3>
+      <h3 style="margin:0" id="modalTitle">✅ ปิดงานติดตั้ง</h3>
       <div class="sub" id="modalOrder"></div>
 
-      <label>บันทึกการติดตั้ง</label>
+      <label id="noteLabel">บันทึกการติดตั้ง</label>
       <textarea id="note" rows="3" placeholder="เช่น ติดกล้อง 4 จุด หน้าบ้าน/หลังบ้าน ตั้งค่าดูผ่านมือถือลูกค้าแล้ว"></textarea>
 
       <label>ลายเซ็นลูกค้า (เซ็นในกรอบ)</label>
@@ -121,8 +125,16 @@
       working:  '🔧 ถึงหน้างาน เริ่มติดตั้ง',
       done:     '✅ ติดตั้งเสร็จ ปิดงาน'
     };
+    // ปุ่มสำหรับงานเคลม (ซ่อม)
+    const CLAIM_ACTION = {
+      ...JOB_ACTION,
+      working: '🔧 ถึงหน้างาน เริ่มซ่อม',
+      done:    '✅ ซ่อมเสร็จ ปิดงาน'
+    };
 
-    let jobs = [];
+    let orderJobs = [];       // งานติดตั้งจาก orders
+    let claimJobs = [];       // งานซ่อมจาก claims
+    let jobs = [];            // รวมทั้งสองแบบ
     let staff = null;         // ข้อมูลช่างจาก staff/{uid} (อ่านอย่างเดียว)
     let email = '';
     let tab = 'todo';
@@ -134,15 +146,22 @@
       email = user.email;
       $('who').textContent = user.email;
 
+      // งานติดตั้ง
       const q = query(collection(db, 'orders'), where('techUid', '==', user.uid));
       onSnapshot(q, snap => {
-        jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        jobs.sort((a, b) => String(a.installDate).localeCompare(String(b.installDate)));
-        render();
+        orderJobs = snap.docs.map(d => fromOrder({ id: d.id, ...d.data() }));
+        merge();
       }, error => {
         console.log(error.code);
         $('list').innerHTML = '<p class="empty">โหลดงานไม่สำเร็จ: ' + error.code + '</p>';
       });
+
+      // งานเคลม (ซ่อม)
+      const qc = query(collection(db, 'claims'), where('techUid', '==', user.uid));
+      onSnapshot(qc, snap => {
+        claimJobs = snap.docs.map(d => fromClaim({ id: d.id, ...d.data() }));
+        merge();
+      }, error => console.log('claims:', error.code));
 
       // ข้อมูลช่าง: ฟังสด ถ้าแอดมินแก้ใน Console หน้านี้จะอัปเดตเอง
       onSnapshot(doc(db, 'staff', user.uid), snap => {
@@ -154,14 +173,40 @@
       document.body.style.visibility = 'visible';
     });
 
+    // แปลงงานติดตั้ง/งานเคลม ให้อยู่ในรูปแบบเดียวกัน
+    function fromOrder(o) {
+      return {
+        kind: 'install', col: 'orders', id: o.id,
+        date: o.installDate || '', job: o.job,
+        name: o.shipping?.name, phone: o.shipping?.phone, address: o.shipping?.address,
+        cancelled: o.status === 'cancelled',
+        items: (o.items || []).map(i => `• ${esc(i.name)} × ${i.qty}`).join('<br>')
+      };
+    }
+    function fromClaim(c) {
+      return {
+        kind: 'claim', col: 'claims', id: c.id,
+        date: c.appointDate || '',
+        job: c.job || { status: 'assigned', techName: c.techName },
+        name: c.customerName, phone: c.phone, address: c.address,
+        cancelled: c.status === 'rejected',
+        claim: c
+      };
+    }
+    function merge() {
+      jobs = [...orderJobs, ...claimJobs].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      render();
+    }
+    const isDone = j => j.job?.status === 'done';
+
     // 2) วาดทั้งหน้า
     function render() {
       const today = todayStr();
-      const todo = jobs.filter(o => o.job?.status !== 'done' && o.status !== 'cancelled');
-      const done = jobs.filter(o => o.job?.status === 'done');
+      const todo = jobs.filter(j => !isDone(j) && !j.cancelled);
+      const done = jobs.filter(isDone);
 
       $('stats').innerHTML = `
-        <div class="stat"><b style="color:#dc2626">${todo.filter(o => o.installDate === today).length}</b><small>นัดวันนี้</small></div>
+        <div class="stat"><b style="color:#dc2626">${todo.filter(j => j.date === today).length}</b><small>นัดวันนี้</small></div>
         <div class="stat"><b style="color:#e08a00">${todo.length}</b><small>งานค้าง</small></div>
         <div class="stat"><b style="color:#15803d">${done.length}</b><small>เสร็จแล้ว</small></div>`;
 
@@ -181,16 +226,17 @@
         return;
       }
 
-      $('list').innerHTML = list.map(o => `
-        <div class="job" data-id="${esc(o.id)}">
+      $('list').innerHTML = list.map(j => `
+        <div class="job ${j.kind}" data-id="${esc(j.id)}">
           <div class="head">
             <div>
-              <div class="no">📅 ${esc(o.installDate || '-')}${o.installDate === today ? '<span class="today">วันนี้</span>' : ''}</div>
-              <div class="sub">${esc(o.id)} · ${esc(o.shipping?.name)}</div>
+              <div class="no">📅 ${esc(j.date || '-')}${j.date === today ? '<span class="today">วันนี้</span>' : ''}
+                <span class="kind ${j.kind}">${j.kind === 'claim' ? '🛠️ เคลม/ซ่อม' : '📦 ติดตั้ง'}</span></div>
+              <div class="sub">${esc(j.id)} · ${esc(j.name)}</div>
             </div>
-            ${jobBadge(o.job?.status)}
+            ${jobBadge(j.job?.status)}
           </div>
-          ${opened.has(o.id) ? detail(o) : '<div class="more">แตะเพื่อดูรายละเอียด ▾</div>'}
+          ${opened.has(j.id) ? detail(j) : '<div class="more">แตะเพื่อดูรายละเอียด ▾</div>'}
         </div>`).join('');
     }
 
@@ -203,7 +249,7 @@
       // นับงานที่เสร็จในเดือนนี้
       const now = new Date();
       const thisMonth = done.filter(o => {
-        const d = o.job?.doneAt?.toDate?.();
+        const d = o.job?.doneAt?.toDate?.();  // o = งานติดตั้งหรือเคลม
         return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       }).length;
 
@@ -231,8 +277,8 @@
     }
 
     // 4) รายละเอียดงาน
-    function detail(o) {
-      const s = o.job?.status;
+    function detail(j) {
+      const s = j.job?.status;
       const idx = JOB_FLOW.indexOf(s);
 
       const steps = `<div class="steps">${JOB_FLOW.map((k, i) => `
@@ -240,32 +286,51 @@
           <div class="dot">${i <= idx ? '✓' : i + 1}</div>${JOB[k].label}
         </div>`).join('')}</div>`;
 
-      const items = o.items.map(i => `• ${esc(i.name)} × ${i.qty}`).join('<br>');
-      const phone = esc(o.shipping?.phone);
-      const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(o.shipping?.address || '');
+      const phone = esc(j.phone);
+      const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(j.address || '');
 
+      // เนื้องาน: ติดตั้ง = รายการอุปกรณ์, เคลม = อาการเสีย + รูป
+      let work = '';
+      if (j.kind === 'install') {
+        work = `<div class="box"><b>📦 อุปกรณ์ที่ต้องติดตั้ง</b><br>${j.items}</div>`;
+      } else {
+        const c = j.claim;
+        const img = typeof c.image === 'string' && c.image.startsWith('data:image/')
+          ? `<img class="claimimg" src="${c.image}" alt="รูปจากลูกค้า">` : '';
+        work = `
+          <div class="box">
+            <b>🛠️ งานเคลม/ซ่อม</b><br>
+            สินค้า: ${esc(c.productName)} (${esc(c.productId)})<br>
+            ออเดอร์เดิม: ${esc(c.orderId)}<br>
+            อาการ: <b>${esc(c.type)}</b> — ${esc(c.detail)}
+            ${c.reply ? `<br>💬 แอดมิน: ${esc(c.reply)}` : ''}
+            ${img}
+          </div>`;
+      }
+
+      const labels = j.kind === 'claim' ? CLAIM_ACTION : JOB_ACTION;
       let action = '';
-      if (o.status === 'cancelled') {
-        action = '<div class="warn">❌ คำสั่งซื้อนี้ถูกยกเลิกแล้ว ไม่ต้องเข้างาน</div>';
+      if (j.cancelled) {
+        action = `<div class="warn">❌ ${j.kind === 'claim' ? 'เคลมนี้ไม่อนุมัติแล้ว' : 'คำสั่งซื้อนี้ถูกยกเลิกแล้ว'} ไม่ต้องเข้างาน</div>`;
       } else {
         const next = nextJob(s);
-        if (next) action = `<button class="act ${next === 'done' ? 'finish' : ''}" data-next="${next}" data-id="${esc(o.id)}">${JOB_ACTION[next]}</button>`;
+        if (next) action = `<button class="act ${next === 'done' ? 'finish' : ''}" data-next="${next}" data-id="${esc(j.id)}">${labels[next]}</button>`;
       }
 
       const result = s === 'done' ? `
-        <div class="box">📝 ${esc(o.job.note || '-')}</div>
-        ${String(o.job.signature || '').startsWith('data:image/') ? `<img class="sigimg" src="${esc(o.job.signature)}" alt="ลายเซ็นลูกค้า">` : ''}` : '';
+        <div class="box">📝 ${esc(j.job.note || '-')}</div>
+        ${String(j.job.signature || '').startsWith('data:image/') ? `<img class="sigimg" src="${esc(j.job.signature)}" alt="ลายเซ็นลูกค้า">` : ''}` : '';
 
       return `
         <div class="detail">
           ${steps}
           <div class="box">
-            👤 ${esc(o.shipping?.name)}<br>
+            👤 ${esc(j.name)}<br>
             📞 <a href="tel:${phone}">${phone}</a> (แตะเพื่อโทร)<br>
-            📍 ${esc(o.shipping?.address)}<br>
+            📍 ${esc(j.address || '-')}<br>
             🗺️ <a href="${map}" target="_blank" rel="noopener">เปิดใน Google Maps</a>
           </div>
-          <div class="box"><b>📦 อุปกรณ์ที่ต้องติดตั้ง</b><br>${items}</div>
+          ${work}
           ${result}
           ${action}
         </div>`;
@@ -291,9 +356,10 @@
           return;
         }
 
+        const j = jobs.find(x => x.id === id);
         btn.disabled = true;
         try {
-          await updateDoc(doc(db, 'orders', id), {
+          await updateDoc(doc(db, j.col, id), {
             'job.status': next,
             ['job.' + next + 'At']: serverTimestamp()
           });
@@ -349,7 +415,11 @@
 
     function openModal(id) {
       closingId = id;
-      $('modalOrder').textContent = 'คำสั่งซื้อ ' + id;
+      const isClaim = jobs.find(x => x.id === id)?.kind === 'claim';
+      $('modalTitle').textContent = isClaim ? '✅ ปิดงานซ่อม (เคลม)' : '✅ ปิดงานติดตั้ง';
+      $('noteLabel').textContent = isClaim ? 'บันทึกการซ่อม' : 'บันทึกการติดตั้ง';
+      $('note').placeholder = isClaim ? 'เช่น เปลี่ยนอะแดปเตอร์ใหม่ ทดสอบกล้องใช้งานได้ปกติ' : 'เช่น ติดกล้อง 4 จุด หน้าบ้าน/หลังบ้าน ตั้งค่าดูผ่านมือถือลูกค้าแล้ว';
+      $('modalOrder').textContent = (isClaim ? 'เคลม ' : 'คำสั่งซื้อ ') + id;
       $('note').value = '';
       $('modal').classList.add('show');
       resetCanvas();
@@ -370,7 +440,8 @@
       btn.disabled = true;
       btn.textContent = 'กำลังบันทึก...';
       try {
-        await updateDoc(doc(db, 'orders', closingId), {
+        const j = jobs.find(x => x.id === closingId);
+        await updateDoc(doc(db, j.col, closingId), {
           'job.status': 'done',
           'job.note': $('note').value.trim(),
           'job.signature': canvas.toDataURL('image/jpeg', 0.6),

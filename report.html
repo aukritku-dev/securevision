@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงานยอดขาย | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { visibility: hidden; margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; display: flex; justify-content: center; color: #0f172a; }
+    .app { width: 100%; max-width: 720px; min-height: 100vh; background: #f7f9fc; }
+    header { background: #0f2350; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    header b { font-size: 20px; display: block; }
+    header small { opacity: .75; }
+    .hbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .hbtns a, .hbtns button { color: white; text-decoration: none; background: rgba(255,255,255,.15); border: none; border-radius: 10px; padding: 8px 12px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    main { padding: 16px; }
+
+    .chips { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; }
+    .chip { flex-shrink: 0; background: white; border: 1px solid #dde3ef; border-radius: 999px; padding: 6px 14px; font-family: inherit; font-size: 14px; cursor: pointer; }
+    .chip.active { background: #0f2350; color: white; border-color: #0f2350; }
+    .range { font-size: 13px; color: #64748b; margin: -6px 0 12px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .stat b { display: block; font-size: 20px; }
+    .stat small { color: #64748b; font-size: 12px; }
+    .stat.main { background: #0f2350; color: white; border-color: #0f2350; }
+    .stat.main small { color: #cbd5e1; }
+
+    .card { background: white; border: 1px solid #e5e9f2; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .card h3 { margin: 0 0 4px; font-size: 16px; font-weight: 500; }
+    .hint { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+
+    /* กราฟแท่งรายวัน */
+    .chart { display: flex; align-items: flex-end; gap: 3px; height: 180px; border-bottom: 1px solid #cbd5e1; padding-top: 18px; }
+    .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; min-width: 0; }
+    .col .bar { width: 100%; max-width: 28px; background: #2563eb; border-radius: 4px 4px 0 0; min-height: 0; }
+    .col .bar.zero { background: transparent; }
+    .col:hover .bar { background: #1d4ed8; }
+    .col .tip { display: none; position: absolute; bottom: calc(100% + 4px); background: #0f172a; color: white; font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 2; }
+    .col:hover .tip { display: block; }
+    .xlabels { display: flex; gap: 3px; margin-top: 4px; }
+    .xlabels span { flex: 1; text-align: center; font-size: 10px; color: #94a3b8; min-width: 0; overflow: hidden; }
+
+    /* ตาราง */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; text-align: left; }
+    th { color: #64748b; font-weight: 500; font-size: 12px; }
+    td.r, th.r { text-align: right; white-space: nowrap; }
+    .rank { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #f1f5f9; text-align: center; line-height: 22px; font-size: 12px; margin-right: 4px; }
+    .rank.top { background: #fef3c7; color: #b45309; font-weight: 600; }
+
+    /* แถบสัดส่วน */
+    .share { margin-bottom: 10px; }
+    .share .lbl { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; gap: 8px; }
+    .share .lbl span:last-child { color: #64748b; white-space: nowrap; }
+    .track { height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+    .track div { height: 100%; background: #2563eb; border-radius: 5px; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid2 .card { margin-bottom: 0; }
+    .empty { text-align: center; color: #94a3b8; padding: 20px 0; font-size: 14px; }
+    .note { background: #eff4ff; color: #1d4ed8; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; line-height: 1.6; }
+
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      header .hbtns, .chips { display: none; }
+      .card, .stat { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div><b>📈 รายงานยอดขาย</b><small>สรุปยอดขาย · สินค้าขายดี · ช่องทางชำระเงิน</small></div>
+      <div class="hbtns">
+        <button id="csvBtn">⬇️ CSV</button>
+        <button id="printBtn">🖨️ พิมพ์</button>
+        <a href="admin.html">← กลับ</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="chips" id="chips"></div>
+      <div class="range" id="range"></div>
+
+      <div class="note">
+        💡 นับเป็นยอดขายเฉพาะออเดอร์ที่<b>ร้านยืนยันแล้ว</b> (ยืนยันแล้ว / กำลังจัดส่ง / สำเร็จ)
+        ออเดอร์ที่รอยืนยันยังไม่นับ และออเดอร์ที่ยกเลิกไม่นับ
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="card">
+        <h3>📊 ยอดขายรายวัน</h3>
+        <div class="hint" id="chartHint">ชี้ที่แท่งเพื่อดูยอด</div>
+        <div id="chart"></div>
+      </div>
+
+      <div class="card">
+        <h3>🏆 สินค้าขายดี</h3>
+        <div class="hint">เรียงตามยอดขาย (บาท)</div>
+        <div id="top"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>🗂️ แยกตามหมวดหมู่</h3>
+          <div class="hint">ยอดขายสินค้า ไม่รวมค่าส่ง/ค่าติดตั้ง</div>
+          <div id="cats"></div>
+        </div>
+        <div class="card">
+          <h3>💳 ช่องทางชำระเงิน</h3>
+          <div class="hint">จำนวนออเดอร์และยอดเงิน</div>
+          <div id="pay"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>🧾 องค์ประกอบรายได้</h3>
+        <div class="hint">แยกยอดขายรวมออกเป็นแต่ละส่วน</div>
+        <div id="parts"></div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { requireRole } from './guard.js';
+    import { STATUS, CATEGORIES, esc } from './status.js';
+    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+    const SOLD = ['confirmed', 'shipping', 'completed'];   // สถานะที่นับเป็นยอดขาย
+    const PAY = { transfer: '🏦 โอนเงิน / QR', cod: '💵 เก็บเงินปลายทาง' };
+    const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+    let orders = [];
+    let products = {};
+    let period = '30';
+
+    const baht = n => '฿' + Math.round(Number(n) || 0).toLocaleString('th-TH');
+    const dayKey = d => d.toLocaleDateString('sv-SE');                 // YYYY-MM-DD
+    const thDate = d => d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    const dateOf = o => o.createdAt?.toDate ? o.createdAt.toDate() : null;
+
+    requireRole('admin', function () {
+      onSnapshot(collection(db, 'orders'), snap => {
+        orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render();
+      });
+      onSnapshot(collection(db, 'products'), snap => {
+        products = {};
+        snap.docs.forEach(d => products[d.id] = d.data());
+        render();
+      });
+      document.body.style.visibility = 'visible';
+    });
+
+    // ช่วงเวลา
+    const PERIODS = [
+      ['7', '7 วันล่าสุด'],
+      ['30', '30 วันล่าสุด'],
+      ['month', 'เดือนนี้'],
+      ['all', 'ทั้งหมด']
+    ];
+
+    function rangeOf(p) {
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      if (p === '7') start.setDate(start.getDate() - 6);
+      else if (p === '30') start.setDate(start.getDate() - 29);
+      else if (p === 'month') start.setDate(1);
+      else {
+        const ds = orders.map(dateOf).filter(Boolean);
+        const first = ds.length ? new Date(Math.min(...ds)) : new Date();
+        first.setHours(0, 0, 0, 0);
+        return { start: first, end };
+      }
+      return { start, end };
+    }
+
+    function render() {
+      $('chips').innerHTML = PERIODS.map(([k, label]) =>
+        `<button class="chip ${k === period ? 'active' : ''}" data-p="${k}">${label}</button>`).join('');
+
+      const { start, end } = rangeOf(period);
+      $('range').textContent = `ช่วงวันที่ ${thDate(start)} – ${thDate(end)} ${end.getFullYear() + 543}`;
+
+      const inRange = orders.filter(o => { const d = dateOf(o); return d && d >= start && d <= end; });
+      const sold = inRange.filter(o => SOLD.includes(o.status));
+      const pending = inRange.filter(o => o.status === 'pending');
+      const cancelled = inRange.filter(o => o.status === 'cancelled');
+
+      const revenue = sold.reduce((s, o) => s + Number(o.total || 0), 0);
+      const aov = sold.length ? revenue / sold.length : 0;
+      const cancelRate = inRange.length ? cancelled.length / inRange.length * 100 : 0;
+
+      // 1) ตัวเลขสรุป
+      $('stats').innerHTML = `
+        <div class="stat main"><b>${baht(revenue)}</b><small>ยอดขาย (${sold.length} ออเดอร์)</small></div>
+        <div class="stat"><b>${baht(aov)}</b><small>ยอดเฉลี่ยต่อออเดอร์</small></div>
+        <div class="stat"><b style="color:#b45309">${baht(pending.reduce((s, o) => s + Number(o.total || 0), 0))}</b><small>รอยืนยัน (${pending.length})</small></div>
+        <div class="stat"><b style="color:#b91c1c">${cancelRate.toFixed(0)}%</b><small>อัตรายกเลิก (${cancelled.length})</small></div>`;
+
+      renderChart(sold, start, end);
+      renderTop(sold);
+      renderCats(sold);
+      renderPay(sold);
+      renderParts(sold, revenue);
+    }
+
+    // 2) กราฟรายวัน
+    function renderChart(sold, start, end) {
+      const days = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+      // ถ้าช่วงยาวเกิน 62 วัน ให้รวมเป็นรายเดือน
+      const monthly = days.length > 62;
+      const buckets = new Map();
+      const keyOf = d => monthly ? d.toLocaleDateString('sv-SE').slice(0, 7) : dayKey(d);
+
+      days.forEach(d => { const k = keyOf(d); if (!buckets.has(k)) buckets.set(k, { date: new Date(d), sum: 0, n: 0 }); });
+      sold.forEach(o => {
+        const b = buckets.get(keyOf(dateOf(o)));
+        if (b) { b.sum += Number(o.total || 0); b.n++; }
+      });
+
+      const rows = [...buckets.values()];
+      const max = Math.max(...rows.map(r => r.sum), 1);
+      const every = Math.ceil(rows.length / 10);   // แสดงป้ายวันที่ไม่เกิน ~10 ป้าย
+      const label = d => monthly ? d.toLocaleDateString('th-TH', { month: 'short' }) : thDate(d);
+
+      $('chartHint').textContent = (monthly ? 'รวมเป็นรายเดือน · ' : '') + 'ชี้ที่แท่งเพื่อดูยอด';
+
+      if (!sold.length) { $('chart').innerHTML = '<p class="empty">ยังไม่มียอดขายในช่วงนี้</p>'; return; }
+
+      $('chart').innerHTML = `
+        <div class="chart">
+          ${rows.map(r => `
+            <div class="col">
+              <div class="tip">${label(r.date)} · ${baht(r.sum)} · ${r.n} ออเดอร์</div>
+              <div class="bar ${r.sum ? '' : 'zero'}" style="height:${r.sum / max * 100}%"></div>
+            </div>`).join('')}
+        </div>
+        <div class="xlabels">${rows.map((r, i) => `<span>${i % every === 0 ? label(r.date) : ''}</span>`).join('')}</div>`;
+    }
+
+    // 3) สินค้าขายดี
+    function renderTop(sold) {
+      const map = {};
+      sold.forEach(o => (o.items || []).forEach(i => {
+        const m = map[i.id] || (map[i.id] = { id: i.id, name: i.name, qty: 0, sum: 0 });
+        m.qty += Number(i.qty || 0);
+        m.sum += Number(i.price || 0) * Number(i.qty || 0);
+      }));
+      const list = Object.values(map).sort((a, b) => b.sum - a.sum).slice(0, 10);
+      if (!list.length) { $('top').innerHTML = '<p class="empty">ยังไม่มีข้อมูล</p>'; return; }
+
+      $('top').innerHTML = `
+        <table>
+          <tr><th>สินค้า</th><th class="r">จำนวน</th><th class="r">ยอดขาย</th></tr>
+          ${list.map((p, k) => `
+            <tr>
+              <td><span class="rank ${k < 3 ? 'top' : ''}">${k + 1}</span>${esc(p.name)} <small style="color:#94a3b8">${esc(p.id)}</small></td>
+              <td class="r">${p.qty} ชิ้น</td>
+              <td class="r"><b>${baht(p.sum)}</b></td>
+            </tr>`).join('')}
+        </table>`;
+    }
+
+    // แถบสัดส่วน
+    function shares(rows, total) {
+      if (!total) return '<p class="empty">ยังไม่มีข้อมูล</p>';
+      return rows.map(r => `
+        <div class="share">
+          <div class="lbl"><span>${r.label}</span><span>${r.extra ? r.extra + ' · ' : ''}${baht(r.sum)} (${(r.sum / total * 100).toFixed(0)}%)</span></div>
+          <div class="track"><div style="width:${r.sum / total * 100}%"></div></div>
+        </div>`).join('');
+    }
+
+    // 4) หมวดหมู่
+    function renderCats(sold) {
+      const map = {};
+      sold.forEach(o => (o.items || []).forEach(i => {
+        const cat = products[i.id]?.cat || 'other';
+        map[cat] = (map[cat] || 0) + Number(i.price || 0) * Number(i.qty || 0);
+      }));
+      const rows = Object.entries(map)
+        .map(([k, sum]) => ({ label: CAT[k] ? `${CAT[k].icon} ${esc(CAT[k].name)}` : '❔ ไม่ระบุหมวด', sum }))
+        .sort((a, b) => b.sum - a.sum);
+      $('cats').innerHTML = shares(rows, rows.reduce((s, r) => s + r.sum, 0));
+    }
+
+    // 5) ช่องทางชำระเงิน
+    function renderPay(sold) {
+      const map = {};
+      sold.forEach(o => {
+        const k = o.payment || 'other';
+        map[k] = map[k] || { sum: 0, n: 0 };
+        map[k].sum += Number(o.total || 0);
+        map[k].n++;
+      });
+      const rows = Object.entries(map)
+        .map(([k, v]) => ({ label: PAY[k] || esc(k), sum: v.sum, extra: v.n + ' ออเดอร์' }))
+        .sort((a, b) => b.sum - a.sum);
+      $('pay').innerHTML = shares(rows, rows.reduce((s, r) => s + r.sum, 0));
+    }
+
+    // 6) องค์ประกอบรายได้
+    function renderParts(sold, revenue) {
+      const goods = sold.reduce((s, o) => s + Number(o.subtotal || 0), 0);
+      const ship = sold.reduce((s, o) => s + Number(o.shipFee || 0), 0);
+      const install = sold.reduce((s, o) => s + Number(o.installFee || 0), 0);
+      const nInstall = sold.filter(o => o.install).length;
+      $('parts').innerHTML = shares([
+        { label: '📦 ค่าสินค้า', sum: goods },
+        { label: '🔧 ค่าติดตั้ง', sum: install, extra: nInstall + ' งาน' },
+        { label: '🚚 ค่าจัดส่ง', sum: ship }
+      ], revenue);
+    }
+
+    // ตัวกรองช่วงเวลา
+    $('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      period = btn.dataset.p;
+      render();
+    });
+
+    // ดาวน์โหลด CSV (เปิดใน Excel ได้)
+    $('csvBtn').addEventListener('click', () => {
+      const { start, end } = rangeOf(period);
+      const rows = orders
+        .filter(o => { const d = dateOf(o); return d && d >= start && d <= end; })
+        .sort((a, b) => dateOf(a) - dateOf(b));
+      const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = [
+        ['เลขที่ออเดอร์', 'วันที่', 'ลูกค้า', 'สถานะ', 'ชำระเงิน', 'ค่าสินค้า', 'ค่าจัดส่ง', 'ค่าติดตั้ง', 'ยอดรวม', 'นับเป็นยอดขาย'],
+        ...rows.map(o => [
+          o.id,
+          dateOf(o).toLocaleString('th-TH'),
+          o.shipping?.name,
+          STATUS[o.status]?.label || o.status,
+          PAY[o.payment] ? PAY[o.payment].replace(/^\S+\s/, '') : o.payment,
+          o.subtotal, o.shipFee || 0, o.installFee || 0, o.total,
+          SOLD.includes(o.status) ? 'ใช่' : 'ไม่'
+        ])
+      ];
+      const csv = '\uFEFF' + lines.map(r => r.map(cell).join(',')).join('\r\n');   // \uFEFF ให้ Excel อ่านภาษาไทยถูก
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `sales-report-${dayKey(new Date())}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    $('printBtn').addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>

@@ -87,7 +87,7 @@
   <script type="module">
     import { auth, db } from './firebase.js';
     import { renderNav } from './nav.js';
-    import { esc, compressImage } from './status.js';
+    import { esc, compressImage, jobBadge } from './status.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
     import {
       collection, doc, getDoc, getDocs, setDoc, onSnapshot, query, where, serverTimestamp
@@ -266,7 +266,10 @@
         const s = CLAIM[c.status] || CLAIM.open;
         const bars = [1, 2, 3, 4].map(n => `<div class="${n <= s.step ? 'on' : ''}" style="${n <= s.step ? 'background:' + s.color : ''}"></div>`).join('');
         let reply = '';
-        if (c.status === 'repair') reply = `🔧 นัดช่าง <b>${esc(c.techName || '-')}</b> วันที่ <b>${esc(c.appointDate || '-')}</b>`;
+        if (c.decision === 'repair') {
+          reply = `🔧 นัดช่าง <b>${esc(c.techName || '-')}</b> วันที่ <b>${esc(c.appointDate || '-')}</b> · ${jobBadge(c.job?.status || 'assigned')}`;
+          if (c.job?.status === 'done' && c.job?.note) reply += `<br>📝 ช่างบันทึก: ${esc(c.job.note)}`;
+        }
         if (c.status === 'replace') reply = '🔁 อนุมัติเปลี่ยนสินค้าใหม่ จะจัดส่งให้เร็วที่สุด';
         if (c.reply) reply += (reply ? '<br>' : '') + '💬 ' + esc(c.reply);
         return `
