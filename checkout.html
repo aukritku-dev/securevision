@@ -76,14 +76,9 @@
 
       <div class="card">
         <h3><span class="step">3</span>วิธีชำระเงิน</h3>
-        <label class="option">
-          <input type="radio" name="pay" value="transfer" checked>
-          <div><b>📱 สแกน QR โอนเงิน</b><small>แสดง QR หลังสั่งซื้อ แล้วแนบสลิปเพื่อยืนยัน</small></div>
-        </label>
-        <label class="option">
-          <input type="radio" name="pay" value="cod">
-          <div><b>💵 ชำระเงินปลายทาง</b><small>จ่ายเมื่อได้รับสินค้าหรือติดตั้งเสร็จ</small></div>
-        </label>
+        <div class="option" style="border-color:#2563eb;background:#eff4ff;cursor:default">
+          <div><b>📱 สแกน QR โอนเงิน</b><small>แสดง QR หลังสั่งซื้อ แล้วแนบสลิปเพื่อยืนยัน · รับเงินได้จากทุกธนาคาร</small></div>
+        </div>
       </div>
 
       <div class="card">
@@ -207,7 +202,7 @@
       const phone = $('phone').value.replace(/[-\s]/g, '');
       const address = $('address').value.trim();
       const c = calc();
-      const payment = document.querySelector('input[name="pay"]:checked').value;
+      const payment = 'transfer';   // ร้านรับชำระด้วยการโอนเงินเท่านั้น
 
       if (!name || !phone || !address) {
         alert('กรุณากรอกชื่อ เบอร์โทร และที่อยู่ให้ครบ');
@@ -249,7 +244,7 @@
         });
         batch.delete(doc(db, 'carts', user.uid));
         await batch.commit();
-        showDone(orderNo, c.total, payment);
+        showDone(orderNo, c.total);
       } catch (error) {
         console.log(error.code);
         alert('สั่งซื้อไม่สำเร็จ: ' + error.code);
@@ -259,37 +254,23 @@
     });
 
     // 7) หน้าหลังสร้างคำสั่งซื้อ
-    function showDone(orderNo, total, payment) {
+    function showDone(orderNo, total) {
       const amount = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
       $('main').scrollIntoView();
 
-      if (payment === 'transfer') {
-        $('main').innerHTML = `
-          <div class="done">
-            <div class="big">⏳</div>
-            <h2>รอชำระเงิน</h2>
-            <p class="muted">เลขที่คำสั่งซื้อ</p>
-            <div class="no">${orderNo}</div>
-            <img class="qrimg" src="${SHOP.qrImage}" alt="QR ชำระเงิน">
-            <p class="muted">สแกนแล้วกรอกยอดเงิน</p>
-            <div class="amt">฿${amount}</div>
-            <p class="muted">โอนแล้วกดปุ่มด้านล่างเพื่อแนบสลิป<br>ร้านจะยืนยันคำสั่งซื้อหลังตรวจสลิป</p>
-            <a class="primary" href="orders.html?open=${orderNo}">📎 แนบสลิปโอนเงิน</a>
-            <a class="ghost" href="products.html">ไว้จ่ายทีหลัง</a>
-          </div>`;
-      } else {
-        $('main').innerHTML = `
-          <div class="done">
-            <div class="big">✅</div>
-            <h2>สั่งซื้อสำเร็จ!</h2>
-            <p class="muted">เลขที่คำสั่งซื้อ</p>
-            <div class="no">${orderNo}</div>
-            <p>ชำระเงินปลายทาง <b>฿${amount}</b></p>
-            <p class="muted">ร้านจะตรวจสอบและยืนยันคำสั่งซื้อโดยเร็ว</p>
-            <a class="primary" href="orders.html?open=${orderNo}">📦 ดูคำสั่งซื้อ</a>
-            <a class="ghost" href="products.html">เลือกซื้อสินค้าต่อ</a>
-          </div>`;
-      }
+      $('main').innerHTML = `
+        <div class="done">
+          <div class="big">⏳</div>
+          <h2>รอชำระเงิน</h2>
+          <p class="muted">เลขที่คำสั่งซื้อ</p>
+          <div class="no">${orderNo}</div>
+          <img class="qrimg" src="${SHOP.qrImage}" alt="QR ชำระเงิน">
+          <p class="muted">สแกนแล้วกรอกยอดเงิน</p>
+          <div class="amt">฿${amount}</div>
+          <p class="muted">โอนแล้วกดปุ่มด้านล่างเพื่อแนบสลิป<br>ร้านจะยืนยันคำสั่งซื้อหลังตรวจสลิป</p>
+          <a class="primary" href="orders.html?open=${orderNo}">📎 แนบสลิปโอนเงิน</a>
+          <a class="ghost" href="products.html">ไว้จ่ายทีหลัง</a>
+        </div>`;
     }
   </script>
 </body>
