@@ -1,34 +1,43 @@
 import { auth, db } from './firebase.js';
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
-// ใช้ที่ต้นหน้า: requireRole('admin', ฟังก์ชันที่จะทำเมื่อผ่าน)
-export function requireRole(roleNeeded, onReady) {
-  onAuthStateChanged(auth, async (user) => {
-    // 1) ยังไม่ล็อกอิน → ส่งไปหน้าล็อกอินของบทบาทนั้น
+// หน้าหลักของแต่ละบทบาท
+const HOME = { customer: 'index.html', tech: 'tech.html', admin: 'admin.html' };
+
+// ใช้ที่หัวทุกหน้าที่ต้องล็อคอิน เช่น requireRole('admin', user => { ... })
+export function requireRole(role, onReady) {
+  let readyUid = null;
+
+  onAuthStateChanged(auth, async user => {
+    // 1) ยังไม่ได้ล็อคอิน → ไปหน้าเข้าสู่ระบบ
     if (!user) {
-      window.location.href = 'login.html?role=' + roleNeeded;
+      location.href = 'login.html';
       return;
     }
 
-    // 2) ล็อกอินแล้ว → ไปดูบทบาทจริงในฐานข้อมูล
+    // 2) ล็อคอินเปลี่ยนบัญชีจากอีกแท็บ → โหลดหน้าใหม่ให้ตรวจสิทธิ์อีกรอบ
+    if (readyUid && readyUid !== user.uid) {
+      location.reload();
+      return;
+    }
+    if (readyUid) return;   // บัญชีเดิม ไม่ต้องทำซ้ำ
+
+    // 3) ตรวจบทบาท
     const snap = await getDoc(doc(db, 'users', user.uid));
-    const role = snap.exists() ? snap.data().role : null;
+    const myRole = snap.exists() ? snap.data().role : null;
 
-    // 3) บทบาทไม่ตรง → ออกจากระบบ แล้วกลับหน้าแรก
-    if (role !== roleNeeded) {
-      await signOut(auth);
-      window.location.href = 'index.html';
+    if (myRole !== role) {
+      // ไม่ออกจากระบบ แค่พากลับไปหน้าของบทบาทตัวเอง
+      location.href = HOME[myRole] || 'login.html';
       return;
     }
 
-    // 4) ผ่าน → ให้หน้านั้นแสดงผล
+    readyUid = user.uid;
     onReady(user);
   });
 }
 
-// ปุ่มออกจากระบบ
-export async function logout() {
-  await signOut(auth);
-  window.location.href = 'index.html';
+export function logout() {
+  signOut(auth).then(() => { location.href = 'index.html'; });
 }
