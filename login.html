@@ -4,150 +4,219 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>เข้าสู่ระบบ | SecureVision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #f3f5fa;
-      display: flex;
-      justify-content: center;
-    }
-    .page { width: 100%; max-width: 420px; padding: 24px; }
-    .back { color: #667; text-decoration: none; }
-    .badge {
-      width: 64px; height: 64px;
-      border-radius: 18px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 32px;
-      margin: 24px 0 12px;
-    }
-    h1 { margin: 0 0 4px; color: #0f2350; }
-    p  { margin: 0 0 24px; color: #667; }
-    label { display: block; font-weight: bold; margin-bottom: 6px; color: #0f2350; }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px;
-      border: 1px solid #dde3ef;
-      border-radius: 12px;
-      font-size: 16px;
-      margin-bottom: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .note { text-align: center; margin-top: 16px; color: #667; font-size: 14px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Kanit', sans-serif; background: #eef1f7; color: #0f172a; min-height: 100vh; display: flex; justify-content: center; }
+    .wrap { width: 100%; max-width: 440px; padding: 24px 16px 40px; }
+    .back { color: #64748b; text-decoration: none; font-size: 15px; }
+    .brand { margin: 22px 0 18px; }
+    .brand b { font-size: 34px; color: #0f2350; display: block; line-height: 1.1; }
+    .brand small { color: #64748b; font-size: 15px; }
+
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; box-shadow: 0 4px 18px rgba(15, 35, 80, .06); }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
+    .tabs button { border: none; background: transparent; padding: 10px; border-radius: 9px; font-family: inherit; font-size: 15px; color: #64748b; cursor: pointer; }
+    .tabs button.on { background: white; color: #0f2350; font-weight: 500; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+
+    label { display: block; font-size: 14px; color: #475569; margin: 12px 0 4px; }
+    input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-family: inherit; font-size: 16px; background: white; }
+    input:focus { outline: 2px solid #2563eb; border-color: transparent; }
+    .pw { position: relative; }
+    .pw input { padding-right: 52px; }
+    .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: none; background: none; font-size: 18px; cursor: pointer; padding: 6px; }
+
+    .btn { width: 100%; margin-top: 18px; padding: 13px; border: none; border-radius: 12px; background: #0f2350; color: white; font-family: inherit; font-size: 16px; cursor: pointer; }
+    .btn:disabled { background: #94a3b8; cursor: wait; }
+    .link { display: block; text-align: right; margin-top: 8px; font-size: 13px; color: #2563eb; background: none; border: none; font-family: inherit; cursor: pointer; padding: 0; margin-left: auto; }
+    .msg { margin-top: 14px; padding: 10px 12px; border-radius: 10px; font-size: 14px; display: none; }
+    .msg.err { display: block; background: #fee2e2; color: #b91c1c; }
+    .msg.ok { display: block; background: #dcfce7; color: #166534; }
+    .note { font-size: 12px; color: #64748b; margin-top: 14px; line-height: 1.6; text-align: center; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div class="page">
-    <a class="back" href="role.html">← เปลี่ยนประเภทผู้ใช้</a>
+  <div class="wrap">
+    <a class="back" href="index.html">← กลับหน้าร้าน</a>
 
-    <div class="badge" id="badge"></div>
-    <h1 id="title"></h1>
-    <p id="subtitle"></p>
+    <div class="brand">
+      <b>SecureVision</b>
+      <small>กล้องวงจรปิด · ระบบดับเพลิง · สัญญาณกันขโมย</small>
+    </div>
 
-    <form id="loginForm">
-      <label>อีเมล</label>
-      <input type="email" id="email" placeholder="you@example.com" required>
+    <div class="card">
+      <div class="tabs">
+        <button id="tabLogin" class="on">เข้าสู่ระบบ</button>
+        <button id="tabSignup">สมัครสมาชิก</button>
+      </div>
 
-      <label>รหัสผ่าน</label>
-      <input type="password" id="password" placeholder="••••••••" required>
+      <!-- เข้าสู่ระบบ -->
+      <form id="loginForm">
+        <label>อีเมล</label>
+        <input type="email" id="lEmail" autocomplete="email" required>
+        <label>รหัสผ่าน</label>
+        <div class="pw">
+          <input type="password" id="lPass" autocomplete="current-password" required>
+          <button type="button" data-eye="lPass">👁</button>
+        </div>
+        <button type="button" class="link" id="forgotBtn">ลืมรหัสผ่าน?</button>
+        <button class="btn" id="loginBtn">เข้าสู่ระบบ</button>
+      </form>
 
-      <button type="submit" id="btn">เข้าสู่ระบบ</button>
-    </form>
+      <!-- สมัครสมาชิก (เฉพาะลูกค้า) -->
+      <form id="signupForm" class="hidden">
+        <label>ชื่อ-นามสกุล</label>
+        <input id="sName" autocomplete="name" required>
+        <label>เบอร์โทรศัพท์</label>
+        <input type="tel" id="sPhone" autocomplete="tel" placeholder="08x-xxx-xxxx" required>
+        <label>อีเมล</label>
+        <input type="email" id="sEmail" autocomplete="email" required>
+        <label>รหัสผ่าน (อย่างน้อย 6 ตัว)</label>
+        <div class="pw">
+          <input type="password" id="sPass" autocomplete="new-password" minlength="6" required>
+          <button type="button" data-eye="sPass">👁</button>
+        </div>
+        <label>ยืนยันรหัสผ่าน</label>
+        <input type="password" id="sPass2" autocomplete="new-password" required>
+        <button class="btn" id="signupBtn">สมัครสมาชิก</button>
+        <div class="note">สมัครได้เฉพาะบัญชีลูกค้า<br>บัญชีช่างและผู้ดูแลระบบ สร้างโดยผู้ดูแลระบบเท่านั้น</div>
+      </form>
 
-    <div class="note" id="note"></div>
+      <div class="msg" id="msg"></div>
+    </div>
   </div>
 
   <script type="module">
-    // 0) ดึง Firebase เข้ามาใช้
     import { auth, db } from './firebase.js';
-    import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import {
+      signInWithEmailAndPassword, createUserWithEmailAndPassword,
+      sendPasswordResetEmail, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { doc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
-    // 1) ข้อมูลของแต่ละบทบาท
-    const roles = {
-      customer: {
-        icon: '🛒',
-        title: 'เข้าสู่ระบบลูกค้า',
-        subtitle: 'ซื้อสินค้าและติดตามคำสั่งซื้อของคุณ',
-        color: '#1f5eff',
-        note: 'ยังไม่มีบัญชี? <a href="#">สมัครสมาชิก</a>'
-      },
-      tech: {
-        icon: '🔧',
-        title: 'เข้าสู่ระบบช่างเทคนิค',
-        subtitle: 'สำหรับพนักงานช่างของ SecureVision',
-        color: '#e08a00',
-        note: 'บัญชีช่างสร้างโดยผู้ดูแลระบบเท่านั้น'
-      },
-      admin: {
-        icon: '📊',
-        title: 'เข้าสู่ระบบผู้ดูแล',
-        subtitle: 'สำหรับผู้ดูแลระบบและผู้บริหาร',
-        color: '#0f2350',
-        note: 'บัญชีผู้ดูแลสร้างโดยผู้ดูแลระบบเท่านั้น'
-      }
+    const $ = id => document.getElementById(id);
+    const STAFF_DOMAIN = '@securevision.com';         // อีเมลโดเมนนี้สงวนไว้ให้ช่าง/แอดมิน
+    const HOME = { customer: 'index.html', tech: 'tech.html', admin: 'admin.html' };
+    let busy = false;
+
+    // ---------- ข้อความแจ้งเตือน ----------
+    function show(text, type = 'err') {
+      $('msg').className = 'msg ' + type;
+      $('msg').textContent = text;
+    }
+    const ERR = {
+      'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+      'auth/invalid-email': 'รูปแบบอีเมลไม่ถูกต้อง',
+      'auth/user-disabled': 'บัญชีนี้ถูกระงับการใช้งาน',
+      'auth/too-many-requests': 'ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่',
+      'auth/email-already-in-use': 'อีเมลนี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบ',
+      'auth/weak-password': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัว',
+      'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้',
+      'permission-denied': 'ไม่มีสิทธิ์สร้างบัญชีนี้'
     };
+    const errText = e => ERR[e.code] || ('เกิดข้อผิดพลาด: ' + e.code);
 
-    // 2) อ่านค่า ?role= จากที่อยู่เว็บ
-    const params = new URLSearchParams(window.location.search);
-    const roleKey = params.get('role');
-    const role = roles[roleKey];
-
-    // 3) ถ้าไม่มี role หรือพิมพ์ผิด ให้กลับไปหน้าเลือกบทบาท
-    if (!role) {
-      window.location.href = 'role.html';
-    } else {
-      // 4) เอาข้อมูลไปใส่ในหน้าเว็บ
-      document.getElementById('badge').textContent = role.icon;
-      document.getElementById('badge').style.background = role.color + '22';
-      document.getElementById('title').textContent = role.title;
-      document.getElementById('subtitle').textContent = role.subtitle;
-      document.getElementById('btn').style.background = role.color;
-      document.getElementById('note').innerHTML = role.note;
+    // ---------- พาไปหน้าตามบทบาท ----------
+    async function goByRole(user) {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const role = snap.exists() ? snap.data().role : null;
+      if (!HOME[role]) {
+        await signOut(auth);
+        show('บัญชีนี้ยังไม่ได้กำหนดสิทธิ์ใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
+        return;
+      }
+      location.href = HOME[role];
     }
 
-    // 5) เมื่อกดปุ่มเข้าสู่ระบบ
-    document.getElementById('loginForm').addEventListener('submit', async function (event) {
-      event.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const btn = document.getElementById('btn');
+    // ถ้าล็อคอินค้างอยู่แล้ว พาไปหน้าของตัวเองเลย
+    const stop = onAuthStateChanged(auth, user => {
+      stop();
+      if (user && !busy) goByRole(user).catch(e => show(errText(e)));
+    });
 
-      btn.textContent = 'กำลังเข้าสู่ระบบ...';
-      btn.disabled = true;
+    // ---------- สลับแท็บ ----------
+    function tab(which) {
+      const login = which === 'login';
+      $('tabLogin').classList.toggle('on', login);
+      $('tabSignup').classList.toggle('on', !login);
+      $('loginForm').classList.toggle('hidden', !login);
+      $('signupForm').classList.toggle('hidden', login);
+      $('msg').className = 'msg';
+    }
+    $('tabLogin').addEventListener('click', () => tab('login'));
+    $('tabSignup').addEventListener('click', () => tab('signup'));
+    if (location.hash === '#signup') tab('signup');
 
+    // ปุ่มดูรหัสผ่าน
+    document.querySelectorAll('[data-eye]').forEach(b => b.addEventListener('click', () => {
+      const input = $(b.dataset.eye);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }));
+
+    // ---------- เข้าสู่ระบบ ----------
+    $('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      busy = true;
+      $('loginBtn').disabled = true;
+      $('loginBtn').textContent = 'กำลังเข้าสู่ระบบ...';
       try {
-        // 5.1 ล็อกอิน
-        const result = await signInWithEmailAndPassword(auth, email, password);
-
-        // 5.2 เปิดเอกสาร users/{UID} เพื่อดูบทบาทจริง
-        const snap = await getDoc(doc(db, 'users', result.user.uid));
-        const realRole = snap.exists() ? snap.data().role : null;
-
-        // 5.3 เทียบกับบทบาทที่เลือกเข้ามา
-        if (realRole === roleKey) {
-          window.location.href = roleKey === 'customer' ? 'index.html' : roleKey + '.html';
-        } else {
-          await signOut(auth);
-          alert('บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานในส่วนนี้');
-        }
-      } catch (error) {
-        console.log(error.code);
-        alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+        const cred = await signInWithEmailAndPassword(auth, $('lEmail').value.trim(), $('lPass').value);
+        await goByRole(cred.user);
+      } catch (err) {
+        show(errText(err));
       }
+      busy = false;
+      $('loginBtn').disabled = false;
+      $('loginBtn').textContent = 'เข้าสู่ระบบ';
+    });
 
-      btn.textContent = 'เข้าสู่ระบบ';
-      btn.disabled = false;
+    // ---------- ลืมรหัสผ่าน ----------
+    $('forgotBtn').addEventListener('click', async () => {
+      const email = $('lEmail').value.trim();
+      if (!email) { $('lEmail').focus(); return show('กรอกอีเมลก่อน แล้วกด "ลืมรหัสผ่าน?" อีกครั้ง'); }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        show('ถ้าอีเมลนี้มีบัญชีอยู่ ระบบได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปแล้ว (เช็คในกล่องสแปมด้วย)', 'ok');
+      } catch (err) {
+        show(errText(err));
+      }
+    });
+
+    // ---------- สมัครสมาชิก (ลูกค้าเท่านั้น) ----------
+    $('signupForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = $('sName').value.trim();
+      const phone = $('sPhone').value.trim();
+      const email = $('sEmail').value.trim().toLowerCase();
+      const pass = $('sPass').value;
+
+      if (email.endsWith(STAFF_DOMAIN)) return show('อีเมล ' + STAFF_DOMAIN + ' สงวนไว้สำหรับพนักงาน ใช้สมัครสมาชิกไม่ได้');
+      if (!/^0\d{8,9}$/.test(phone.replace(/[-\s]/g, ''))) return show('กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 081-234-5678');
+      if (pass.length < 6) return show('รหัสผ่านต้องมีอย่างน้อย 6 ตัว');
+      if (pass !== $('sPass2').value) return show('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
+
+      busy = true;
+      $('signupBtn').disabled = true;
+      $('signupBtn').textContent = 'กำลังสมัคร...';
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const uid = cred.user.uid;
+        // บทบาทลูกค้า + โปรไฟล์ (Rules บังคับว่า role ต้องเป็น customer เท่านั้น)
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'users', uid), { role: 'customer', email, createdAt: serverTimestamp() });
+        batch.set(doc(db, 'profiles', uid), { name, phone, address: '' });
+        await batch.commit();
+        show('สมัครสมาชิกสำเร็จ กำลังพาไปหน้าร้าน...', 'ok');
+        setTimeout(() => location.href = 'index.html', 800);
+      } catch (err) {
+        // ถ้าสร้างบัญชีได้แต่บันทึกบทบาทไม่ผ่าน ให้ออกจากระบบ
+        if (auth.currentUser) await signOut(auth);
+        show(errText(err));
+        busy = false;
+        $('signupBtn').disabled = false;
+        $('signupBtn').textContent = 'สมัครสมาชิก';
+      }
     });
   </script>
 </body>
