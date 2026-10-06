@@ -34,10 +34,8 @@
     .tag-off { background: #f1f5f9; color: #475569; font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-left: 4px; }
     .acts { display: flex; flex-direction: column; gap: 6px; }
     .acts button { background: white; border: 1px solid #dde3ef; border-radius: 8px; padding: 6px 10px; font-family: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .acts button.del { border-color: #fecaca; color: #dc2626; }
     .empty { text-align: center; color: #64748b; padding: 30px 0; }
-
-    .tools { margin-top: 28px; border-top: 1px solid #e5e9f2; padding-top: 16px; color: #64748b; font-size: 14px; }
-    .tools button { background: white; border: 1px solid #dde3ef; border-radius: 10px; padding: 8px 14px; font-family: inherit; cursor: pointer; }
 
     .modal { position: fixed; inset: 0; background: rgba(15,23,42,.6); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
     .modal.show { display: flex; }
@@ -65,7 +63,7 @@
 <body>
   <div class="app">
     <header>
-      <div><b>🏷️ จัดการสินค้า</b><small>เพิ่ม · แก้ไข · ซ่อน/แสดงสินค้า</small></div>
+      <div><b>🏷️ จัดการสินค้า</b><small>เพิ่ม · แก้ไข · ซ่อน/แสดง · ลบสินค้า</small></div>
       <a href="admin.html">← คำสั่งซื้อ</a>
     </header>
 
@@ -77,10 +75,6 @@
       <div class="chips" id="chips"></div>
       <div id="list"><p class="empty">กำลังโหลด...</p></div>
 
-      <div class="tools">
-        🛠 เครื่องมือ
-        <p><button id="seedFireBtn">🧯 นำเข้าสินค้าระบบดับเพลิงตัวอย่าง (F01–F06)</button> <span id="seedStatus"></span></p>
-      </div>
     </main>
   </div>
 
@@ -134,7 +128,7 @@
     import { db } from './firebase.js';
     import { requireRole } from './guard.js';
     import { CATEGORIES, esc, productPic, compressImage } from './status.js';
-    import { collection, doc, onSnapshot, updateDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import { collection, doc, onSnapshot, updateDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
     const $ = id => document.getElementById(id);
     const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
@@ -190,6 +184,7 @@
             <div class="acts">
               <button data-edit="${esc(p.id)}">✏️ แก้ไข</button>
               <button data-toggle="${esc(p.id)}">${off ? '👁 แสดง' : '🙈 ซ่อน'}</button>
+              ${off ? `<button class="del" data-del="${esc(p.id)}">🗑️ ลบ</button>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -207,6 +202,23 @@
     $('list').addEventListener('click', async e => {
       const edit = e.target.closest('[data-edit]');
       if (edit) { openForm(edit.dataset.edit); return; }
+
+      // ลบสินค้า: ทำได้เฉพาะสินค้าที่ซ่อนไว้แล้ว และต้องพิมพ์รหัสยืนยัน
+      const del = e.target.closest('[data-del]');
+      if (del) {
+        const p = products.find(x => x.id === del.dataset.del);
+        const stock = Number(p.stock ?? 0);
+        const warn = stock > 0 ? `\n⚠️ สินค้านี้ยังมีสต็อกเหลือ ${stock} ชิ้น` : '';
+        const typed = prompt(`ลบ "${p.name}" ออกจากระบบถาวร?${warn}\nออเดอร์เก่าที่เคยขายสินค้านี้ยังอยู่ แต่จะกู้สินค้าคืนไม่ได้\n\nพิมพ์รหัสสินค้า ${p.id} เพื่อยืนยัน`);
+        if (typed === null) return;
+        if (typed.trim().toUpperCase() !== p.id) { alert('รหัสไม่ตรง ยกเลิกการลบ'); return; }
+        try {
+          await deleteDoc(doc(db, 'products', p.id));
+        } catch (error) {
+          alert('ลบไม่สำเร็จ: ' + error.code);
+        }
+        return;
+      }
 
       const toggle = e.target.closest('[data-toggle]');
       if (toggle) {
@@ -317,43 +329,6 @@
       btn.textContent = 'บันทึก';
     });
 
-    // 7) เครื่องมือ: นำเข้าสินค้าระบบดับเพลิงตัวอย่าง
-    const FIRE = [
-      { id: 'F01', name: 'หัวสปริงเกอร์ 68°C แบบห้อยหัว (Pendent)', price: 290,  oldPrice: null, icon: '🚿', stock: 600, rop: 300, eoq: 500 },
-      { id: 'F02', name: 'หัวสปริงเกอร์ 68°C แบบตั้งขึ้น (Upright)', price: 290,  oldPrice: null, icon: '🚿', stock: 250, rop: 300, eoq: 500 },
-      { id: 'F03', name: 'เครื่องตรวจจับควันไร้สาย',                  price: 690,  oldPrice: 890,  icon: '🚨', stock: 150, rop: 80,  eoq: 200 },
-      { id: 'F04', name: 'ตู้ควบคุมแจ้งเหตุเพลิงไหม้ 4 โซน',          price: 8900, oldPrice: null, icon: '🎛️', stock: 12,  rop: 5,   eoq: 10  },
-      { id: 'F05', name: 'ถังดับเพลิงผงเคมีแห้ง ABC 15 ปอนด์',        price: 1290, oldPrice: 1590, icon: '🧯', stock: 80,  rop: 40,  eoq: 100 },
-      { id: 'F06', name: 'กริ่งแจ้งเหตุเพลิงไหม้ 6 นิ้ว',             price: 850,  oldPrice: null, icon: '🔔', stock: 0,   rop: 20,  eoq: 50  }
-    ];
-
-    $('seedFireBtn').addEventListener('click', async () => {
-      const fresh = FIRE.filter(f => !products.some(p => p.id === f.id));
-      if (fresh.length === 0) {
-        $('seedStatus').textContent = 'มีครบทุกรายการแล้ว';
-        return;
-      }
-      $('seedStatus').textContent = 'กำลังบันทึก...';
-      try {
-        const batch = writeBatch(db);
-        fresh.forEach(f => {
-          batch.set(doc(db, 'products', f.id), {
-            name: f.name, cat: 'fire', price: f.price, oldPrice: f.oldPrice, icon: f.icon, image: null,
-            stock: f.stock, rop: f.rop, eoq: f.eoq, active: true, createdAt: serverTimestamp()
-          });
-          if (f.stock > 0) {
-            batch.set(doc(collection(db, 'stockMoves')), {
-              pid: f.id, name: f.name, qty: f.stock, type: 'adjust',
-              ref: 'สต็อกเริ่มต้น (สินค้าใหม่)', by: adminEmail, at: serverTimestamp()
-            });
-          }
-        });
-        await batch.commit();
-        $('seedStatus').textContent = '✅ เพิ่ม ' + fresh.length + ' รายการแล้ว';
-      } catch (error) {
-        $('seedStatus').textContent = '❌ ' + error.code;
-      }
-    });
   </script>
 </body>
 </html>
