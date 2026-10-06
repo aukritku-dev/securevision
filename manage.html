@@ -184,7 +184,7 @@
             <div class="acts">
               <button data-edit="${esc(p.id)}">✏️ แก้ไข</button>
               <button data-toggle="${esc(p.id)}">${off ? '👁 แสดง' : '🙈 ซ่อน'}</button>
-              ${off ? `<button class="del" data-del="${esc(p.id)}">🗑️ ลบ</button>` : ''}
+              <button class="del" data-del="${esc(p.id)}">🗑️ ลบ</button>
             </div>
           </div>`;
       }).join('');
@@ -203,7 +203,7 @@
       const edit = e.target.closest('[data-edit]');
       if (edit) { openForm(edit.dataset.edit); return; }
 
-      // ลบสินค้า: ทำได้เฉพาะสินค้าที่ซ่อนไว้แล้ว และต้องพิมพ์รหัสยืนยัน
+      // ลบสินค้า: ต้องพิมพ์รหัสสินค้ายืนยันก่อนลบ
       const del = e.target.closest('[data-del]');
       if (del) {
         const p = products.find(x => x.id === del.dataset.del);
