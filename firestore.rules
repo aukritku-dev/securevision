@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function role() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+    function isAdmin() { return signedIn() && role() == 'admin'; }
+    function isTech() { return signedIn() && role() == 'tech'; }
+    function isStaff() { return isAdmin() || isTech(); }
+    function onlyChanged(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+    function orderOf(id) { return get(/databases/$(database)/documents/orders/$(id)).data; }
+
+    // ---------- users & staff ----------
+    // signup: customers only, staff email domain is blocked
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.role == 'customer'
+        && request.resource.data.keys().hasOnly(['role', 'email', 'createdAt'])
+        && !request.auth.token.email.lower().matches('.*@securevision[.]com$');
+      allow update, delete: if false;
+    }
+
+    match /staff/{uid} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    // ---------- products & stock ----------
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /stockMoves/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // ---------- customer data ----------
+    match /profiles/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    match /carts/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- orders ----------
+    match /orders/{id} {
+      allow create: if isOwner(request.resource.data.uid)
+        && request.resource.data.status == 'pending';
+
+      allow read: if signedIn() && (
+        resource.data.uid == request.auth.uid
+        || isAdmin()
+        || (isTech() && resource.data.techUid == request.auth.uid)
+      );
+
+      allow update: if isAdmin()
+        || (isTech() && resource.data.techUid == request.auth.uid && onlyChanged(['job']))
+        || (signedIn() && resource.data.uid == request.auth.uid && onlyChanged(['slipAt']));
+
+      allow delete: if false;
+    }
+
+    // ---------- payment slips ----------
+    match /slips/{id} {
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && orderOf(id).uid == request.auth.uid
+        && request.resource.data.image.size() < 900000;
+
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if false;
+    }
+
+    // ---------- claims ----------
+    match /claims/{id} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'open'
+        && orderOf(request.resource.data.orderId).uid == request.auth.uid
+        && (!('image' in request.resource.data) || request.resource.data.image.size() < 900000);
+
+      allow read: if signedIn() && (
+        resource.data.uid == request.auth.uid
+        || isAdmin()
+        || (isTech() && resource.data.techUid == request.auth.uid)
+      );
+
+      allow update: if isAdmin()
+        || (isTech() && resource.data.techUid == request.auth.uid && onlyChanged(['job']));
+
+      allow delete: if false;
+    }
+  }
+}
